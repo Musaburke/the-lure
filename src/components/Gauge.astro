@@ -1,0 +1,62 @@
+---
+// The live depth gauge. Needs JS (it reads the scroll), so it is hidden without it;
+// every zone also states its depth in words. Sound lives here so it is always in reach.
+import { zones } from '../data/zones';
+---
+<aside class="gauge" aria-label="Depth gauge">
+  <p class="g-zone" data-g="zone">Surface</p>
+  <p class="g-depth" aria-hidden="true"><span data-g="depth">0</span><span class="unit"> m</span></p>
+  <dl class="g-read" aria-hidden="true">
+    <div><dt>Pressure</dt><dd data-g="pressure">1 atm</dd></div>
+    <div><dt>Water</dt><dd data-g="temp">about 18 °C</dd></div>
+    <div><dt>Sunlight</dt><dd data-g="light">100%</dd></div>
+  </dl>
+  <ol class="g-dots" aria-label="Lures spotted">
+    {zones.map((z) => (
+      <li data-dot={z.id}><span class="visually-hidden">{z.animal}: <span data-dot-state>not spotted yet</span></span></li>
+    ))}
+  </ol>
+  <button type="button" class="g-sound" data-sound aria-pressed="false">Sound off</button>
+</aside>
+
+<style>
+  .gauge { display: none; }
+  :global(.js) .gauge {
+    display: grid; align-content: start; gap: 0.9rem;
+    position: fixed; z-index: 5; left: var(--margin); top: 50%; transform: translateY(-50%);
+    width: calc(var(--gauge) - 1rem);
+    font-size: var(--step-small); line-height: 1.3;
+  }
+  .g-zone { color: var(--ink); }
+  .g-depth { font-size: 2.25rem; line-height: 1; letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .unit { font-size: var(--step-small); letter-spacing: 0; color: var(--muted); }
+  .g-read { display: grid; gap: 0.45rem; }
+  .g-read dt { color: var(--muted); }
+  .g-read dd { color: var(--text); font-variant-numeric: tabular-nums; }
+  .g-dots { list-style: none; padding: 0; display: flex; gap: 0.5rem; margin-top: 0.25rem; }
+  .g-dots li { width: 10px; height: 10px; border-radius: 50%; background: rgb(255 255 255 / 0.22); transition: background-color 400ms ease, box-shadow 400ms ease; }
+  .g-dots li.on { background: var(--glow); box-shadow: 0 0 10px var(--glow); }
+  .g-sound {
+    justify-self: start; margin-top: 0.5rem; padding: 0.45rem 0.9rem; min-height: 2.25rem;
+    border: 0; border-radius: 999px; background: var(--bubble); color: var(--ink); cursor: pointer;
+    font-size: var(--step-small);
+    transition: background-color 200ms ease, transform 160ms var(--ease-out);
+  }
+  .g-sound:hover { background: var(--bubble-hover); }
+  .g-sound:active { transform: scale(0.96); }
+  .g-sound[aria-pressed='true'] { background: var(--pill); color: var(--pill-ink); }
+
+  /* Phones: the gauge sits in the top band beside the small lens. */
+  @media (max-width: 899px) {
+    :global(.js) .gauge {
+      top: 0.75rem; left: auto; right: var(--margin); transform: none; width: auto;
+      grid-template-columns: auto auto; align-items: center; gap: 0.25rem 1rem; text-align: right;
+    }
+    .g-zone { grid-column: 1 / -1; }
+    .g-depth { font-size: 1.75rem; grid-column: 1 / -1; }
+    .g-read { display: none; }
+    .g-dots { grid-column: 1; justify-self: end; margin: 0; }
+    .g-sound { grid-column: 2; margin: 0; padding: 0.35rem 0.75rem; min-height: 2rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { .g-dots li, .g-sound { transition: none; } }
+</style>

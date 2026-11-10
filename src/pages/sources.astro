@@ -1,0 +1,70 @@
+---
+import Base from '../layouts/Base.astro';
+import { zones, sources, sunlightPhoto } from '../data/zones';
+
+const gauge = ['noaaPressure', 'noaaLight', 'noaaDeep', 'smithsonianGlow'];
+const photos = [
+  { what: 'Sunlit water (the surface)', ...sunlightPhoto },
+  ...zones.map((z) => ({ what: z.animal, ...z.photo })),
+];
+---
+<Base title="Sources" description="Where every fact and photo in The Lure comes from.">
+  <main id="main" class="page">
+    <h1>Sources</h1>
+    <p class="lead">Every animal fact in The Lure comes from one of these. If something here is wrong, the code is open and corrections are welcome.</p>
+
+    <section aria-labelledby="h-animals">
+      <h2 id="h-animals">The animals and the scams</h2>
+      {zones.map((z) => (
+        <div class="group">
+          <h3>{z.animal}</h3>
+          <ul>
+            {z.sources.map((k) => <li><a class="link" href={sources[k].href}>{sources[k].title}</a>, {sources[k].by}</li>)}
+          </ul>
+        </div>
+      ))}
+    </section>
+
+    <section aria-labelledby="h-gauge">
+      <h2 id="h-gauge">The depth gauge</h2>
+      <p>The gauge shows typical open-ocean values: pressure rises about one atmosphere every 10 metres, sunlight fades to around 1% by 200 metres and is gone below 1,000 metres, and deep water below about 200 metres averages about 4 °C. Real water varies by place and season. The sound, when you turn it on, is made live in your browser.</p>
+      <ul>
+        {gauge.map((k) => <li><a class="link" href={sources[k].href}>{sources[k].title}</a>, {sources[k].by}</li>)}
+      </ul>
+    </section>
+
+    <section aria-labelledby="h-photos">
+      <h2 id="h-photos">Photos</h2>
+      <ul>
+        {photos.map((p) => <li>{p.what}: <a class="link" href={p.href}>photo by {p.credit}</a>, {p.licence}</li>)}
+      </ul>
+      <p class="note">Photos are cropped to a circle and slightly zoomed in the lens. Share-alike photos stay under their original licence.</p>
+    </section>
+
+    <section aria-labelledby="h-help">
+      <h2 id="h-help">Reporting scams in the UK</h2>
+      <ul>
+        <li><a class="link" href="https://www.reportfraud.police.uk/">Report Fraud</a> (which replaced Action Fraud in December 2025), or call 0300 123 2040. In Scotland, Police Scotland on 101.</li>
+        <li>Forward scam texts to 7726, free on most UK networks.</li>
+        <li>Forward scam emails to report@phishing.gov.uk.</li>
+      </ul>
+    </section>
+
+    <p class="back"><a class="btn" href="/">Back to the dive</a></p>
+  </main>
+</Base>
+
+<style>
+  :global(body) { background: #03121a; }
+  .page { padding: clamp(5rem, 10vw, 8rem) var(--margin) var(--section); max-width: 46rem; }
+  h1 { font-size: var(--step-head); line-height: 1; letter-spacing: -0.02em; }
+  .lead { margin-top: 1.5rem; font-size: var(--step-lead); line-height: 1.3; color: var(--ink); }
+  section { margin-top: clamp(3.5rem, 7vw, 5rem); display: grid; gap: 1rem; }
+  h2 { font-size: var(--step-lead); line-height: 1.2; letter-spacing: -0.006em; }
+  h3 { font-size: var(--step-body); color: var(--ink); }
+  .group { display: grid; gap: 0.4rem; }
+  ul { padding-left: 1.25rem; display: grid; gap: 0.5rem; }
+  li::marker { color: var(--glow); }
+  .note { color: var(--muted); font-size: var(--step-small); }
+  .back { margin-top: 4rem; }
+</style>

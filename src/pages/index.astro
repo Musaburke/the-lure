@@ -1,16 +1,211 @@
 ---
----
+import { Image, getImage } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import Check from '../components/Check.astro';
+import Gauge from '../components/Gauge.astro';
+import { zones, surface, abyss } from '../data/zones';
+import sunlight from '../assets/zones/sunlight.jpg';
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+// Photos the lens can show, in order: the surface first, then one per animal. The abyss has none.
+const lensPhotos = await Promise.all([sunlight, ...zones.map((z) => z.photo.src)].map(async (src) => (await getImage({ src, width: 1100, format: 'webp' })).src));
+const sides = ['right', 'left', 'right', 'left'];
+
+const checklist = [
+  ['Stop.', 'A real bank, tax office or delivery company can wait five minutes. Pressure to act now is the hook.'],
+  ['Never use the number or link in the message.', 'Go to the website or app yourself, or call the number on the back of your card.'],
+  ['Read the real address.', 'The part just before .co.uk or .com is who you are really dealing with. Use the checker below if you are not sure.'],
+  ['Change factory passwords.', 'On your router, cameras and smart devices, the day you set them up.'],
+  ['Turn on two-step verification', 'for your email and bank, so a stolen password is not enough on its own.'],
+];
+---
+<Base>
+  <canvas class="plankton" data-plankton aria-hidden="true"></canvas>
+  <canvas class="lens" data-lens data-photos={JSON.stringify([...lensPhotos, ''])} data-frames={JSON.stringify([{ x: 0.5, y: 0.45, zoom: 1.05 }, ...zones.map((z) => z.frame)])} aria-hidden="true"></canvas>
+  <div class="band" aria-hidden="true"></div>
+  <Gauge />
+
+  <main id="main">
+    <section class="stage hero" data-stage data-depth="0,0" data-ground={surface.ground} data-side="left" data-photo="0" data-name="Surface" style={`--zone:${surface.ground}`} aria-labelledby="title">
+      <div class="col" data-reveal>
+        <h1 id="title">The Lure</h1>
+        <p class="promise">Dive 4,000 metres. Meet the animals that trick their prey, and the scams that copy them.</p>
+        <p><a class="btn" href={`#${zones[0].id}`}>Start the dive</a></p>
+      </div>
+    </section>
+
+    {zones.map((z, i) => (
+      <section id={z.id} class="stage zone" data-stage data-depth={z.depth.join(',')} data-ground={z.ground} data-side={sides[i]} data-photo={i + 1} data-name={z.zone} style={`--zone:${z.ground}`} aria-labelledby={`h-${z.id}`}>
+        <div class="col">
+          <header data-reveal>
+            <h2 id={`h-${z.id}`}>{z.animal}</h2>
+            <p class="where">{z.zone}, {z.depth[0].toLocaleString('en-GB')}–{z.depth[1].toLocaleString('en-GB')} metres down · <i>{z.latin}</i></p>
+          </header>
+          <figure class="still">
+            <Image src={z.photo.src} alt={z.photo.alt} widths={[400, 800]} sizes="(max-width: 899px) 70vw, 22rem" />
+          </figure>
+          <div class="facts" data-reveal>
+            {z.facts.map((f, k) => <p class:list={{ lead: k === 0 }}>{f}</p>)}
+          </div>
+          <div class="trick" data-reveal>
+            <h3>{z.trick.name}</h3>
+            {z.trick.text.map((t) => <p>{t}</p>)}
+          </div>
+          <Check id={z.id} check={z.check} />
+        </div>
+      </section>
+    ))}
+
+    <section id="abyss" class="stage zone end" data-stage data-depth={abyss.depth.join(',')} data-ground={abyss.ground} data-side="left" data-photo={zones.length + 1} data-name="Abyss" style={`--zone:${abyss.ground}`} aria-labelledby="h-abyss">
+      <div class="col">
+        <header data-reveal>
+          <h2 id="h-abyss">The bottom</h2>
+          <p class="where">Abyss, 4,000 metres down and deeper</p>
+        </header>
+        <div class="facts" data-reveal>
+          <p class="lead">Down here the only light is made by living things. Every animal you met used a trick. So does every scam.</p>
+          <p class="score" data-score>There are four checks on the way down. Scroll back up to try them.</p>
+        </div>
+
+        <div class="block" data-reveal>
+          <h3>How to never take the bait</h3>
+          <ol class="steps">
+            {checklist.map(([a, b]) => <li><strong>{a}</strong> {b}</li>)}
+          </ol>
+        </div>
+
+        <div class="block" data-reveal>
+          <h3 id="h-check">Check a link</h3>
+          <p>Paste a link from a message you are not sure about. It is checked right here on your device. Nothing is opened or sent anywhere.</p>
+          <form class="lc" data-linkcheck aria-labelledby="h-check" novalidate>
+            <label for="lc-input" class="visually-hidden">Link to check</label>
+            <input id="lc-input" name="link" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="2000" placeholder="parcelpost-redelivery.co/pay" />
+            <button class="btn" type="submit">Check it</button>
+          </form>
+          <div class="lc-out" data-lc-out aria-live="polite"></div>
+          <noscript><p class="lc-note">The checker needs JavaScript. Without it, look at the part of the address just before .co.uk or .com: that is the real website.</p></noscript>
+        </div>
+
+        <div class="block" data-reveal>
+          <h3>If you have already clicked</h3>
+          <p>Call your bank straight away on the number on your card. Report it to <a class="link" href="https://www.reportfraud.police.uk/">Report Fraud</a> or on 0300 123 2040 (in Scotland, call Police Scotland on 101). Forward scam texts to 7726 and scam emails to report@phishing.gov.uk.</p>
+        </div>
+
+        <div class="block" data-reveal>
+          <h3>Send this to someone</h3>
+          <p>The people most likely to take the bait are often the ones least likely to read about it.</p>
+          <p class="share-row"><button class="btn" type="button" data-share>Share The Lure</button> <a class="link" href={`#${zones[0].id}`}>Dive again</a></p>
+          <p class="share-note" data-share-note aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>Photos and facts are credited on the <a class="link" href="/sources">sources page</a>. Scam brands in the examples are invented. <a class="link" href="https://github.com/Musaburke/the-lure">Code on GitHub</a></p>
+  </footer>
+
+  <script>
+    import '../scripts/dive';
+  </script>
+</Base>
+
+<style>
+  .plankton { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
+  .lens { display: none; }
+  .band { display: none; }
+  main, .foot { position: relative; z-index: 2; }
+  :global(body) { background: var(--ground, var(--surface)); }
+
+  .stage { background: var(--zone); padding: var(--section) var(--margin) 0 calc(var(--margin) + var(--gauge)); }
+  :global(.js) .stage { background: transparent; }
+  .col { max-width: 36rem; }
+  .stage[data-side='right'] .col { margin-left: auto; }
+
+  /* Hero */
+  .hero { min-height: 100svh; display: flex; align-items: center; padding-top: 6rem; padding-bottom: 4rem; }
+  .hero .col { max-width: 40rem; }
+  h1 { font-size: var(--step-hero); line-height: 0.95; letter-spacing: -0.03em; }
+  .promise { margin-top: clamp(2rem, 6vh, 4rem); font-size: var(--step-lead); line-height: 1.3; letter-spacing: -0.006em; color: var(--text); max-width: 30ch; }
+  .hero .btn { margin-top: 2.25rem; }
+
+  /* Zones */
+  .zone { min-height: 100svh; }
+  h2 { font-size: var(--step-head); line-height: 1; letter-spacing: -0.02em; }
+  .where { margin-top: 1rem; color: var(--muted); font-size: var(--step-small); }
+  .where i { font-style: normal; }
+  .facts { margin-top: 2.5rem; display: grid; gap: 1.25rem; }
+  .lead { font-size: var(--step-lead); line-height: 1.3; letter-spacing: -0.006em; color: var(--ink); }
+  .trick { margin-top: clamp(3rem, 6vw, 4.5rem); display: grid; gap: 1rem; }
+  h3 { font-size: var(--step-lead); line-height: 1.2; letter-spacing: -0.006em; }
+
+  /* The inline photos are the no-JS version of the lens. */
+  .still { margin: 2.5rem 0 0; width: min(100%, 22rem); aspect-ratio: 1; border-radius: 50%; overflow: hidden; }
+  .still :global(img) { width: 100%; height: 100%; object-fit: cover; }
+  :global(.js) .still { display: none; }
+
+  /* The end */
+  .end { padding-bottom: var(--section); }
+  .end .col { max-width: 40rem; }
+  .score { color: var(--ink); }
+  .block { margin-top: clamp(3.5rem, 7vw, 5rem); display: grid; gap: 1rem; }
+  .steps { padding-left: 1.25rem; display: grid; gap: 0.9rem; }
+  .steps li::marker { color: var(--glow); }
+  .steps strong { font-weight: 400; color: var(--ink); }
+  .lc { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem; }
+  .lc input {
+    flex: 1 1 16rem; min-height: 3.25rem; padding: 0 1.25rem; border: 0; border-radius: 999px;
+    background: var(--bubble); color: var(--ink);
+    transition: background-color 200ms ease;
+  }
+  .lc input::placeholder { color: var(--muted); }
+  .lc input:hover { background: var(--bubble-hover); }
+  .lc input:focus-visible { background: var(--bubble-hover); outline-offset: 2px; }
+  .lc-out:empty { display: none; }
+  .lc-out { display: grid; gap: 0.75rem; margin-top: 0.5rem; }
+  .lc-out :global(.lc-verdict) { font-size: var(--step-lead); color: var(--ink); line-height: 1.25; }
+  .lc-out[data-verdict='clear'] :global(.lc-verdict)::before,
+  .lc-out[data-verdict='careful'] :global(.lc-verdict)::before,
+  .lc-out[data-verdict='danger'] :global(.lc-verdict)::before {
+    content: ''; display: inline-block; width: 0.5em; height: 0.5em; margin-right: 0.5em; border-radius: 50%; vertical-align: 0.12em;
+    background: var(--glow);
+  }
+  .lc-out[data-verdict='careful'] :global(.lc-verdict)::before { background: transparent; box-shadow: inset 0 0 0 2px var(--glow); }
+  .lc-out[data-verdict='danger'] :global(.lc-verdict)::before { background: var(--ink); }
+  .lc-out :global(strong) { font-weight: 400; color: var(--glow); overflow-wrap: anywhere; }
+  .lc-out :global(ul) { padding-left: 1.25rem; display: grid; gap: 0.5rem; }
+  .lc-out :global(.lc-note), .lc-note { color: var(--muted); font-size: var(--step-small); }
+  .share-row { display: flex; flex-wrap: wrap; align-items: center; gap: 1.5rem; margin-top: 0.5rem; }
+  .share-note { min-height: 1.5em; color: var(--muted); font-size: var(--step-small); }
+
+  .foot { padding: 3rem var(--margin) 2.5rem calc(var(--margin) + var(--gauge)); font-size: var(--step-small); color: var(--muted); background: var(--abyss); }
+  :global(.js) .foot { background: transparent; }
+
+  /* With JS on wide screens: the lens floats on the side away from the text, so each column
+     keeps to its own half. */
+  @media (min-width: 900px) {
+    .col, .hero .col, .end .col { max-width: min(36rem, calc(50% - 2rem)); }
+    :global(.js) .lens {
+      --m: clamp(1rem, 4vw, 3.5rem);
+      display: block; position: fixed; z-index: 1; left: 0; top: 50%;
+      width: min(38vw, 560px, 66vh, calc((100vw - var(--gauge) - 2 * var(--m)) / 2 - 2.5rem)); aspect-ratio: 1; height: auto;
+      transform: translate3d(60vw, -50%, 0);
+      will-change: transform; pointer-events: none;
+    }
+  }
+  /* Phones: a band across the top holds a small lens and the gauge; the dive scrolls beneath it. */
+  @media (max-width: 899px) {
+    :global(.js) .band {
+      display: block; position: fixed; z-index: 4; inset: 0 0 auto 0; height: 7.5rem;
+      background: var(--ground, var(--surface));
+    }
+    :global(.js) .lens {
+      display: block; position: fixed; z-index: 5; top: 0.5rem; left: var(--margin);
+      width: 6.5rem; height: 6.5rem; pointer-events: none;
+    }
+    :global(.js) main { padding-top: 7.5rem; }
+    :global(.js) .stage { scroll-margin-top: 7.5rem; }
+    .stage { padding-top: calc(var(--section) * 0.6); }
+    .hero { min-height: calc(100svh - 7.5rem); padding-top: 3rem; }
+    .stage[data-side='right'] .col { margin-left: 0; }
+  }
+</style>

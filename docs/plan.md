@@ -66,3 +66,11 @@ We borrow principles, not their colours, fonts, logos or layouts.
 - Screenshots at 1440 and 390 for every zone, two look rounds; `inspect.mjs` 0 FAIL.
 - Reduced motion, no-JS and keyboard-only passes; link checker tested against a list of real phishing-pattern URLs and safe URLs.
 - Cloudflare preview deploy with CSP enforced and console open.
+
+## Changes made during the build (10 Nov 2026)
+- Stage order follows the animals' real depths: mimic octopus 0–75 m, giant siphonophore 75–200 m (Guinness gives its core habitat as about 75–127 m), hatchetfish 200–1,000 m, anglerfish 1,000–4,000 m.
+- The lens and plankton use Canvas 2D instead of Three.js. Same effect, no 600 KB dependency.
+- Sound is synthesised with Web Audio rather than recorded, so there is nothing to license.
+- Photos come from Wikimedia Commons and Flickr (public domain and CC). Only the hatchetfish is a NOAA photo; NOAA had no usable shots of the others. The two studio photos get a deep-water tint in the lens.
+- The abyss lens has no photo: it goes dark, with one point of living light.
+- UK reporting uses Report Fraud, which replaced Action Fraud in December 2025.

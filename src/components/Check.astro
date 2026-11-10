@@ -1,0 +1,63 @@
+---
+// Spot the lure: a mock message (a real interface fragment, so it keeps the phone's own bubble),
+// with each phrase a button. One phrase is the giveaway. Works without JS through the answer below.
+import type { Check } from '../data/zones';
+interface Props { id: string; check: Check }
+const { id, check } = Astro.props;
+const label = { text: 'Text message', email: 'Email', device: 'Device settings' }[check.kind];
+---
+<div class="check" data-check={id} data-reveal>
+  <h3>Spot the lure</h3>
+  <p class="ask">Tap the part that gives it away.</p>
+  <figure class:list={['msg', check.kind]} data-ui>
+    <figcaption><span class="visually-hidden">{label} from </span>{check.from}</figcaption>
+    <p class="parts">
+      {check.parts.map((p) => (
+        <><button type="button" class="part" data-tell={p.tell ? '' : undefined} data-why={p.why}>{p.text}</button>{' '}</>
+      ))}
+    </p>
+  </figure>
+  <p class="feedback" aria-live="polite" data-right={check.right}></p>
+  <noscript>
+    <details class="answer"><summary class="link">Show the answer</summary><p>{check.right}</p></details>
+  </noscript>
+</div>
+
+<style>
+  .check { margin-top: clamp(3rem, 6vw, 4.5rem); }
+  h3 { font-size: var(--step-lead); letter-spacing: -0.006em; line-height: 1.2; }
+  .ask { margin-top: 0.5rem; }
+  .msg {
+    margin: 1.5rem 0 0; max-width: 30rem;
+    padding: 1rem 1.15rem 1.15rem; border-radius: 22px 22px 22px 6px;
+    background: var(--bubble);
+  }
+  .msg.email { border-radius: 14px; }
+  .msg.device { border-radius: 14px; }
+  figcaption { font-size: var(--step-small); color: var(--muted); margin-bottom: 0.6rem; }
+  .parts { line-height: 1.75; }
+  .device .parts { display: grid; gap: 0.35rem; line-height: 1.4; }
+  .part {
+    display: inline; padding: 0.15em 0.3em; margin: 0 -0.3em;
+    border: 0; border-radius: 6px; background: transparent; color: var(--ink);
+    text-align: left; cursor: pointer;
+    -webkit-box-decoration-break: clone; box-decoration-break: clone;
+    transition: background-color 180ms ease, color 180ms ease;
+  }
+  .device .part { display: block; margin: 0; padding: 0.5rem 0.6rem; }
+  .part:hover { background: var(--bubble-hover); }
+  .part:active { background: rgb(255 255 255 / 0.24); }
+  .part.tried { color: var(--muted); text-decoration: line-through; text-decoration-color: rgb(255 255 255 / 0.3); }
+  .part.hit { background: var(--glow); color: var(--pill-ink); }
+  .feedback { margin-top: 1.25rem; max-width: 34rem; min-height: 1.5em; }
+  .feedback.right { color: var(--ink); }
+  .feedback.right::before {
+    content: ''; display: inline-block; width: 0.55em; height: 0.55em; margin-right: 0.55em;
+    border-radius: 50%; background: var(--glow); vertical-align: 0.1em;
+    box-shadow: 0 0 12px var(--glow); /* bioluminescence: the one sanctioned glow */
+  }
+  .answer { margin-top: 1rem; }
+  .answer summary { cursor: pointer; width: fit-content; }
+  .answer p { margin-top: 0.5rem; max-width: 34rem; }
+  @media (prefers-reduced-motion: reduce) { .part { transition: none; } }
+</style>
