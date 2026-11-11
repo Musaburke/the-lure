@@ -96,7 +96,12 @@ function buildRuler() {
 const smooth = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const mix = (a: number[], b: number[], t: number) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 const PAD = 32, FIT_MIN = 0.3;
-let lastDepth = -1, lastMark = '';
+let lastDepth = -1, lastMark = '', lastGround = '';
+const band = $<HTMLElement>('.band');
+// The crossing glides after the scroll rather than being tied to it: `eased` chases the scroll's
+// target with a time constant, so wheel steps and fast flicks become one smooth swoop.
+const GLIDE = 0.32; // seconds
+let eased = -1, lastT = 0, lensK = -1, gliding = false;
 
 function update() {
   const mid = window.scrollY + vh * 0.5;
@@ -106,19 +111,39 @@ function update() {
   const p = Math.min(1, Math.max(0, (mid - s.top) / s.h));
   const depth = s.d0 + (s.d1 - s.d0) * p;
 
+  // The water colour, written straight to the two things that show it and only when it changes.
+  // (Setting an inherited custom property on the root would restyle the whole page every frame.)
   const [r, gg, b] = mix(s.ground, next.ground, smooth(0.82, 1, p));
-  root.style.setProperty('--ground', `rgb(${r} ${gg} ${b})`);
+  const ground = `rgb(${r} ${gg} ${b})`;
+  if (ground !== lastGround) {
+    lastGround = ground;
+    document.body.style.backgroundColor = ground;
+    if (band) band.style.backgroundColor = ground;
+  }
 
   // Lens: it sits beside the text, then swoops to the other side through the gap between one
   // stage's text and the next: it dips into the gap as the gap rises, glides across, then rides up
   // under the old text until that text has cleared. It shrinks only as much as the gap needs.
   // Every bound moves continuously with the scroll, so the lens never jumps or covers text.
   const full = (lensSize * 0.96) / 2;
-  let k = 0;
-  while (k < stages.length - 1 && stages[k].colBottom - window.scrollY + PAD + full <= vh * 0.5 - 8) k++;
+  let atK = 0;
+  while (atK < stages.length - 1 && stages[atK].colBottom - window.scrollY + PAD + full <= vh * 0.5 - 8) atK++;
+  // Finish one crossing before starting the next, so the lens never snaps between them; a big
+  // jump (a link to a section) moves straight there.
+  if (lensK < 0 || reduced || Math.abs(atK - lensK) > 1) { lensK = atK; eased = -1; }
+  else if (atK > lensK && eased >= 0.999) { lensK = atK; eased = 0; }
+  else if (atK < lensK && eased <= 0.001) { lensK = atK; eased = 1; }
+  const k = lensK;
   const from = stages[Math.min(k, stages.length - 1)], to = stages[Math.min(k + 1, stages.length - 1)];
   const gapTop = from.colBottom - window.scrollY, gapBottom = to.colTop - window.scrollY;
-  const move = to === from ? 0 : 1 - smooth(vh * 0.5, vh * 0.9, (gapTop + gapBottom) / 2);
+  const target = to === from ? 0 : 1 - smooth(vh * 0.35, vh * 1.0, (gapTop + gapBottom) / 2);
+  const now = performance.now();
+  const dt = Math.min(0.1, (now - lastT) / 1000);
+  lastT = now;
+  if (eased < 0) eased = target;
+  else eased += (target - eased) * (1 - Math.exp(-dt / GLIDE));
+  const move = Math.abs(target - eased) < 0.0005 ? target : eased;
+  gliding = move !== target || atK !== lensK;
   const dip = smooth(0, 0.2, move), across = smooth(0.2, 0.8, move), away = smooth(0.8, 1, move);
   if (lensCanvas && wide.matches) {
     const a = gaugePx + marginPx, z = vw - marginPx;
@@ -164,8 +189,11 @@ function update() {
   }
 }
 
+// One frame per scroll event, and more frames while the lens is still gliding to its place.
 let ticking = false;
-window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; update(); }); } }, { passive: true });
+const frame = () => { ticking = false; update(); if (gliding) tick(); };
+const tick = () => { if (!ticking) { ticking = true; requestAnimationFrame(frame); } };
+window.addEventListener('scroll', tick, { passive: true });
 let rt = 0;
 const remeasure = () => { clearTimeout(rt); rt = window.setTimeout(measure, 120); };
 window.addEventListener('resize', remeasure);
