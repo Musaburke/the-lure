@@ -14,16 +14,17 @@
 
   /* Ink: display type brightest, running text a touch softer and tinted by the water. */
   --ink: #ffffff;
-  --text: #eef7f8;
-  --muted: #bcd6da;
+  --text: #eef5f1;
+  --muted: #bfd3cc;
 
-  /* The one accent: bioluminescent blue-green. Living light, the gauge, progress and feedback only. */
-  --glow: #4fe6d4;
-  --glow-soft: rgb(79 230 212 / 0.16);
+  /* The one accent: bioluminescent lime, as in a lab at midnight. Living light, the gauge, progress
+     and feedback only. The deep water carries the same green note (zones.ts grounds). */
+  --glow: #cef79e;
+  --glow-soft: rgb(206 247 158 / 0.16);
 
   /* Buttons are light pills on the dark water. */
-  --pill: #effafa;
-  --pill-ink: #052230;
+  --pill: #f3f7f1;
+  --pill-ink: #0f1d1e;
   --pill-hover: #ffffff;
 
   /* Message mock-ups (data-ui): the phone's own bubble colours. */

@@ -1,13 +1,15 @@
 // The living water behind the page: sunlight shafts near the surface, creature silhouettes that
 // drift past at the depths they really live, glowing plankton that lights up near the pointer,
-// and bubbles. One canvas, one loop. Glow comes from a pre-drawn sprite (no shadowBlur), the pixel
+// bubbles, and huge out-of-focus glowing forms (the bioluminescent lab look) that grow brighter
+// as the light goes. One canvas, one loop. Glow comes from a pre-drawn sprite (no shadowBlur), the pixel
 // ratio is capped, and everything pauses when the tab is hidden. Reduced motion: still frames.
 
-const GLOW = '79, 230, 212';
+const GLOW = '206, 247, 158';
 
 type Speck = { x: number; y: number; r: number; base: number; vy: number; ph: number; lit: number };
 type Creature = { kind: 'fish' | 'jelly' | 'whale' | 'lantern' | 'lure'; d: number; x: number; v: number; s: number; ph: number; a: number };
 type Bubble = { x: number; y: number; r: number; vy: number; life: number };
+type Form = { x: number; y: number; s: number; sx: number; rot: number; spin: number; ph: number; ring: boolean };
 
 const FISH = new Path2D('M-50 0 C-30 -15 15 -16 32 -3 L50 -14 L46 0 L50 14 L32 3 C15 16 -30 15 -50 0 Z');
 const WHALE = new Path2D('M-100 -14 C-60 -24 20 -22 54 -14 C70 -10 78 -2 80 6 C70 16 30 20 -20 18 C-50 17 -80 12 -100 6 L-128 -10 L-122 4 L-132 18 L-104 10 Z');
@@ -19,9 +21,9 @@ export function mountWater(canvas: HTMLCanvasElement, reduced: boolean) {
   let specks: Speck[] = [];
   const bubbles: Bubble[] = [];
   let px = -9999, py = -9999, lastScroll = window.scrollY, raf = 0, running = false;
-  let depth = 0, need = true;
+  let depth = 0, goal = 0, need = true;
 
-  // A soft teal dot, drawn once and stamped many times.
+  // A soft lime dot, drawn once and stamped many times.
   const sprite = document.createElement('canvas');
   sprite.width = sprite.height = 64;
   {
@@ -34,6 +36,28 @@ export function mountWater(canvas: HTMLCanvasElement, reduced: boolean) {
     s.fillStyle = g;
     s.fillRect(0, 0, 64, 64);
   }
+
+  // Out-of-focus forms: a dark, soft green-black body with a glossy lime rim, each drawn once and
+  // then stretched, turned and drifted. Blurry by nature, so upscaling costs nothing.
+  const soft = (stops: [number, string][]) => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 256;
+    const s = c.getContext('2d')!;
+    const g = s.createRadialGradient(128, 128, 0, 128, 128, 128);
+    for (const [o, col] of stops) g.addColorStop(o, col);
+    s.fillStyle = g;
+    s.fillRect(0, 0, 256, 256);
+    return c;
+  };
+  const body = soft([[0, 'rgba(2, 12, 10, 0.55)'], [0.55, 'rgba(4, 18, 14, 0.3)'], [1, 'rgba(6, 22, 18, 0)']]);
+  const rim = soft([[0, `rgba(${GLOW}, 0)`], [0.62, `rgba(${GLOW}, 0)`], [0.8, `rgba(${GLOW}, 0.05)`], [0.86, `rgba(${GLOW}, 0.2)`], [0.9, `rgba(${GLOW}, 0.06)`], [1, `rgba(${GLOW}, 0)`]]);
+  const forms: Form[] = [
+    { x: 0.78, y: 0.3, s: 1.1, sx: 2.6, rot: -0.5, spin: 0.012, ph: 0, ring: true },
+    { x: 0.2, y: 0.75, s: 0.9, sx: 1.4, rot: 0.4, spin: -0.009, ph: 2, ring: false },
+    { x: 0.62, y: 0.82, s: 0.8, sx: 3.2, rot: 0.25, spin: 0.007, ph: 4, ring: true },
+    { x: 0.95, y: 0.6, s: 0.7, sx: 1.2, rot: 0, spin: 0.01, ph: 1, ring: false },
+    { x: 0.08, y: 0.18, s: 0.6, sx: 2.2, rot: 1.1, spin: -0.006, ph: 3, ring: true },
+  ];
 
   // Creatures live at fixed depths; you sink past them.
   const creatures: Creature[] = [];
@@ -68,12 +92,33 @@ export function mountWater(canvas: HTMLCanvasElement, reduced: boolean) {
 
   function frame(now: number) {
     const t = now / 1000;
+    // Glide towards the new depth, so a jump of 100 m in the practice dive reads as sinking.
+    depth = reduced ? goal : depth + (goal - depth) * 0.05;
     const dy = window.scrollY - lastScroll;
     lastScroll = window.scrollY;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
     const sun = Math.max(0, 1 - depth / 230);
     const dark = Math.min(1, depth / 900);
+
+    // The forms: faint in sunlit water, then dark masses edged with living light in the deep.
+    const lab = 0.25 + 0.75 * Math.min(1, depth / 700);
+    const big = Math.max(w, h);
+    for (const f of forms) {
+      const tt = reduced ? 0 : t;
+      const x = f.x * w + Math.sin(tt * 0.05 + f.ph) * w * 0.04;
+      const y = f.y * h + Math.cos(tt * 0.04 + f.ph) * h * 0.05 - window.scrollY * 0.015;
+      const r = big * f.s * 0.5;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(f.rot + tt * f.spin);
+      ctx.scale(f.sx, 1);
+      ctx.globalAlpha = lab;
+      ctx.drawImage(body, -r, -r, r * 2, r * 2);
+      if (f.ring) { ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(rim, -r * 0.9, -r * 0.9, r * 1.8, r * 1.8); ctx.globalCompositeOperation = 'source-over'; }
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
 
     // Sunlight shafts, fading out by about 230 m.
     if (sun > 0.01) {
@@ -206,7 +251,7 @@ export function mountWater(canvas: HTMLCanvasElement, reduced: boolean) {
   if (reduced) { const tick = () => { if (need) frame(performance.now()); requestAnimationFrame(tick); }; requestAnimationFrame(tick); }
 
   return {
-    setDepth(m: number) { if (Math.abs(m - depth) > 0.5) { depth = m; need = true; } },
+    setDepth(m: number) { if (Math.abs(m - goal) > 0.5) { goal = m; need = true; } },
     burst(x: number, y: number, n = 14) { if (!reduced) burst(x, y, n); },
   };
 }

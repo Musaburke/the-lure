@@ -65,7 +65,13 @@ export function mountChallenge(root: HTMLElement, pool: Question[], opts: { onAn
     answered = false;
     root.dataset.state = 'asking';
     goal.textContent = q.goal;
-    cards.replaceChildren(...q.cards.map(cardNode));
+    // Shuffle the cards every time, so the fake's position is never a clue. data-i keeps the
+    // card's index in the question bank.
+    cards.replaceChildren(...shuffle(q.cards.map((_, k) => k)).map((k, pos) => {
+      const n = cardNode(q.cards[k], pos);
+      n.dataset.i = String(k);
+      return n;
+    }));
     result.replaceChildren();
     if (next) next.hidden = true;
     if (count) count.textContent = `${pos + 1} of ${pool.length}`;
@@ -79,12 +85,14 @@ export function mountChallenge(root: HTMLElement, pool: Question[], opts: { onAn
     const fakeIdx = q.cards.findIndex((c) => c.fake);
     const correct = i === fakeIdx;
     const nodes = [...cards.querySelectorAll<HTMLButtonElement>('.card')];
-    nodes.forEach((n, k) => {
+    nodes.forEach((n) => {
+      const k = Number(n.dataset.i);
       n.setAttribute('aria-disabled', 'true');
       n.classList.add(k === fakeIdx ? 'is-fake' : 'is-real');
       if (k === i) n.classList.add('picked');
     });
-    markTell(nodes[fakeIdx], q.cards[fakeIdx].tell ?? '');
+    const fakeNode = nodes.find((n) => Number(n.dataset.i) === fakeIdx);
+    if (fakeNode) markTell(fakeNode, q.cards[fakeIdx].tell ?? '');
     root.dataset.state = correct ? 'right' : 'wrong';
     const verdict = el('p', 'r-verdict', correct ? 'Yes, that one is the fake.' : 'Not that one.');
     const lines = [verdict];

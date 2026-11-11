@@ -12,14 +12,27 @@ uniform vec2 uRes; uniform float uTime; uniform float uMotion;
 uniform sampler2D uT0; uniform sampler2D uT1; uniform float uMix;
 uniform vec4 uF0; uniform vec4 uF1; uniform vec4 uTint0; uniform vec4 uTint1; uniform float uHas0; uniform float uHas1;
 uniform vec2 uPtr; uniform float uHover; uniform vec3 uRip; uniform float uGlow;
+uniform vec2 uPx0; uniform vec2 uPx1; // one texel of each photo, for sharpening
 
 vec3 photo(sampler2D t, vec4 f, vec4 tint, float has, vec2 q) {
   if (has < 0.5) return vec3(0.004, 0.018, 0.026);
   vec3 c = texture2D(t, f.xy + q * f.zw).rgb;
   return tint.a > 0.5 ? c * tint.rgb : c;
 }
-vec3 split(sampler2D t, vec4 f, vec4 tint, float has, vec2 q, float ca) {
-  return vec3(photo(t, f, tint, has, q * (1.0 + ca)).r, photo(t, f, tint, has, q).g, photo(t, f, tint, has, q * (1.0 - ca)).b);
+// The photo with a light unsharp mask, so detail survives being scaled down into the lens.
+vec3 sharp(sampler2D t, vec4 f, vec4 tint, float has, vec2 q, vec2 px) {
+  if (has < 0.5) return vec3(0.004, 0.018, 0.026);
+  vec2 uv = f.xy + q * f.zw;
+  vec3 c = texture2D(t, uv).rgb;
+  vec3 blur = (texture2D(t, uv + vec2(px.x, 0.0)).rgb + texture2D(t, uv - vec2(px.x, 0.0)).rgb +
+               texture2D(t, uv + vec2(0.0, px.y)).rgb + texture2D(t, uv - vec2(0.0, px.y)).rgb) * 0.25;
+  c = clamp(c + (c - blur) * 0.7, 0.0, 1.0);
+  return tint.a > 0.5 ? c * tint.rgb : c;
+}
+vec3 split(sampler2D t, vec4 f, vec4 tint, float has, vec2 q, float ca, vec2 px) {
+  vec3 c = sharp(t, f, tint, has, q, px);
+  if (ca < 0.002) return c;                                     // colour split only at the rim
+  return vec3(photo(t, f, tint, has, q * (1.0 + ca)).r, c.g, photo(t, f, tint, has, q * (1.0 - ca)).b);
 }
 void main() {
   vec2 p = (gl_FragCoord.xy / uRes) * 2.0 - 1.0;
@@ -40,8 +53,9 @@ void main() {
   vec3 n = normalize(vec3(p / R, z + 1e-4));
   vec2 base = p / R;
   vec2 qr = base * (0.8 + 0.17 * z) - uPtr * uHover * 0.03;      // ball-lens refraction, gentle so the photo stays sharp
-  float ca = pow(1.0 - z, 2.0) * 0.018;                          // colour split only at the very edge
-  vec3 col = mix(split(uT0, uF0, uTint0, uHas0, qr, ca), split(uT1, uF1, uTint1, uHas1, qr, ca), uMix);
+  float ca = pow(1.0 - z, 3.0) * 0.014;                          // colour split only at the very edge
+  vec3 col = split(uT1, uF1, uTint1, uHas1, qr, ca, uPx1);
+  if (uMix < 0.999) col = mix(split(uT0, uF0, uTint0, uHas0, qr, ca, uPx0), col, uMix);
   col *= mix(0.62, 1.0, smoothstep(0.0, 0.5, z));               // thick glass darkens towards the rim
   float fr = pow(1.0 - z, 3.0);
   col += vec3(0.7, 0.95, 1.0) * fr * 0.32;                        // fresnel gloss
@@ -51,11 +65,11 @@ void main() {
   float s1b = pow(max(dot(n, normalize(L1 + V)), 0.0), 24.0) * 0.07;
   float s2 = pow(max(dot(n, normalize(normalize(vec3(0.55, -0.5, 0.6)) + V)), 0.0), 40.0) * 0.22;
   col += vec3(1.0) * (s1 * 0.7 + s1b + s2 * 0.7);
-  vec3 teal = vec3(0.31, 0.9, 0.83);
+  vec3 lime = vec3(0.81, 0.97, 0.62);
   float rim = smoothstep(aa * 2.5, 0.0, abs(r - R));
-  col = mix(col, teal + 0.2, rim * (0.35 + 0.4 * uGlow));
+  col = mix(col, lime + 0.15, rim * (0.35 + 0.4 * uGlow));
   float og = exp(-max(r - R, 0.0) * 24.0) * (1.0 - inside) * (0.12 + 0.55 * uGlow);
-  gl_FragColor = vec4(col * inside + teal * og, inside + og);
+  gl_FragColor = vec4(col * inside + lime * og, inside + og);
 }`;
 
 type Tex = { tex: WebGLTexture | null; w: number; h: number; ready: boolean };
@@ -89,12 +103,13 @@ export function mountGlass(canvas: HTMLCanvasElement, urls: string[], frames: Fr
   const u = {
     res: U('uRes'), time: U('uTime'), motion: U('uMotion'), t0: U('uT0'), t1: U('uT1'), mix: U('uMix'),
     f0: U('uF0'), f1: U('uF1'), tint0: U('uTint0'), tint1: U('uTint1'), has0: U('uHas0'), has1: U('uHas1'),
-    ptr: U('uPtr'), hover: U('uHover'), rip: U('uRip'), glow: U('uGlow'),
+    ptr: U('uPtr'), hover: U('uHover'), rip: U('uRip'), glow: U('uGlow'), px0: U('uPx0'), px1: U('uPx1'),
   };
   gl.uniform1i(u.t0, 0);
   gl.uniform1i(u.t1, 1);
   gl.clearColor(0, 0, 0, 0);
 
+  const aniso = gl.getExtension('EXT_texture_filter_anisotropic');
   const texs: Tex[] = urls.map(() => ({ tex: null, w: 1, h: 1, ready: false }));
   function load(i: number) {
     const url = urls[i];
@@ -112,6 +127,7 @@ export function mountGlass(canvas: HTMLCanvasElement, urls: string[], frames: Fr
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       if (isGL2) { gl.generateMipmap(gl.TEXTURE_2D); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); }
       else gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      if (aniso) gl.texParameterf(gl.TEXTURE_2D, aniso.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(aniso.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
       texs[i] = { tex: t, w: im.naturalWidth, h: im.naturalHeight, ready: true };
       need = true;
     };
@@ -153,11 +169,11 @@ export function mountGlass(canvas: HTMLCanvasElement, urls: string[], frames: Fr
 
   function draw(now: number) {
     const t = now / 1000;
-    let mix = 0;
+    let mix = 1; // 1 shows the current photo alone, so the shader samples one texture
     if (fadeStart >= 0) {
       const f = Math.min(1, (now - fadeStart) / 900);
       mix = f * f * (3 - 2 * f);
-      if (f >= 1) { fadeStart = -1; prev = cur; mix = 0; }
+      if (f >= 1) { fadeStart = -1; prev = cur; mix = 1; }
     }
     const a = fadeStart >= 0 ? prev : cur, b = cur;
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -173,6 +189,7 @@ export function mountGlass(canvas: HTMLCanvasElement, urls: string[], frames: Fr
     gl.uniform1f(u.hover, hover);
     gl.uniform3f(u.rip, ripAt[0], ripAt[1], ripStart < 0 ? -1 : (now - ripStart) / 1000);
     gl.uniform1f(u.glow, glow);
+    gl.uniform2f(u.px0, 1 / (texs[a]?.w ?? 1), 1 / (texs[a]?.h ?? 1)); gl.uniform2f(u.px1, 1 / (texs[b]?.w ?? 1), 1 / (texs[b]?.h ?? 1));
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     need = false;
   }

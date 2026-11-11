@@ -8,7 +8,7 @@ import { questions } from '../data/questions';
 // The lens shows the animal behind each question's trick, in scam order: disguise, crowd, look-alike, bait.
 const order = ['disguise', 'crowd', 'lookalike', 'bait'];
 const byScam = order.map((s) => zones.find((z) => z.scam === s)!);
-const photos = await Promise.all(byScam.map(async (z) => (await getImage({ src: z.photo.src, width: Math.min(2048, z.photo.src.width), format: 'webp', quality: 90 })).src));
+const photos = await Promise.all(byScam.map(async (z) => (await getImage({ src: z.photo.src, width: Math.min(3072, z.photo.src.width), format: 'webp', quality: 95 })).src));
 ---
 <Base title="Practice dive" description="An endless spot-the-fake game. Every right answer takes you 100 metres deeper past real landmarks of the deep sea.">
   <canvas class="water" data-water aria-hidden="true"></canvas>
@@ -52,7 +52,7 @@ const photos = await Promise.all(byScam.map(async (z) => (await getImage({ src: 
 </Base>
 
 <style>
-  :global(body) { background: var(--ground, var(--surface)); }
+  :global(body) { background: var(--ground, var(--surface)); transition: background-color 1400ms var(--ease-out); }
   .water { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
   .lens { display: none; }
   .pruler { display: none; }
@@ -97,5 +97,5 @@ const photos = await Promise.all(byScam.map(async (z) => (await getImage({ src: 
     .now { position: absolute; top: 50%; right: 0; width: 1.6rem; height: 2px; background: var(--glow); box-shadow: 0 0 8px var(--glow); }
   }
   @media (max-width: 899px) { .hud dl { grid-template-columns: repeat(2, auto); } }
-  @media (prefers-reduced-motion: reduce) { .strip { transition: none; } :global(.js) .mark.pop { animation: none; } .link-btn { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { :global(body) { transition: none; } .strip { transition: none; } :global(.js) .mark.pop { animation: none; } .link-btn { transition: none; } }
 </style>

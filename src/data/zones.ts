@@ -46,7 +46,7 @@ export const zones: Zone[] = [
     scam: 'disguise',
     zone: 'Sunlight zone',
     depth: [0, 75],
-    ground: '#0b4865',
+    ground: '#0c4a5f',
     animal: 'The mimic octopus',
     latin: 'Thaumoctopus mimicus',
     trick: {
@@ -80,7 +80,7 @@ export const zones: Zone[] = [
     scam: 'crowd',
     zone: 'Sunlight zone, deeper',
     depth: [75, 200],
-    ground: '#0b405d',
+    ground: '#0f4048',
     animal: 'The giant siphonophore',
     latin: 'Praya dubia',
     trick: {
@@ -113,7 +113,7 @@ export const zones: Zone[] = [
     scam: 'lookalike',
     zone: 'Twilight zone',
     depth: [200, 1000],
-    ground: '#082a3d',
+    ground: '#11302e',
     animal: 'The hatchetfish',
     latin: 'Sternoptychidae',
     trick: {
@@ -138,7 +138,7 @@ export const zones: Zone[] = [
       licence: 'Public domain',
       href: 'https://commons.wikimedia.org/wiki/File:ArgyropelecusAculeatus.jpg',
     },
-    frame: { x: 0.4, y: 0.5, zoom: 1.0, tint: '#5d8792' },
+    frame: { x: 0.4, y: 0.5, zoom: 1.0, tint: '#4c7466' },
     sources: ['penn2017', 'duke2020', 'noaaLayers'],
   },
   {
@@ -146,7 +146,7 @@ export const zones: Zone[] = [
     scam: 'bait',
     zone: 'Midnight zone',
     depth: [1000, 4000],
-    ground: '#03121a',
+    ground: '#0b1716',
     animal: 'The deep‑sea anglerfish',
     latin: 'Melanocetus johnsonii',
     trick: {
@@ -172,12 +172,12 @@ export const zones: Zone[] = [
       licence: 'CC BY-SA 4.0',
       href: 'https://commons.wikimedia.org/wiki/File:Hal_-_Melanocetus_johnsonii_-_4.jpg',
     },
-    frame: { x: 0.66, y: 0.5, zoom: 1.0, tint: '#4a7680' },
+    frame: { x: 0.66, y: 0.5, zoom: 1.0, tint: '#365a4f' },
     sources: ['mbariAngler', 'noaaLight', 'noaaLayers'],
   },
 ];
 
-export const abyss = { ground: '#000000', depth: [4000, 4500] as [number, number] };
+export const abyss = { ground: '#030706', depth: [4000, 4500] as [number, number] };
 
 export const sources: Record<string, { title: string; by: string; href: string }> = {
   noaaLayers: { title: 'Layers of the ocean', by: 'NOAA', href: 'https://www.noaa.gov/jetstream/ocean/layers-of-ocean' },

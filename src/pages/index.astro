@@ -8,7 +8,7 @@ import { byScam } from '../data/questions';
 
 // Photos the lens can show, in order: the surface first, then one per animal. The abyss has none.
 // 2,048 px textures so the glass stays sharp on high-density screens.
-const lensPhotos = await Promise.all([surface.photo.src, ...zones.map((z) => z.photo.src)].map(async (src) => (await getImage({ src, width: Math.min(2048, src.width), format: 'webp', quality: 90 })).src));
+const lensPhotos = await Promise.all([surface.photo.src, ...zones.map((z) => z.photo.src)].map(async (src) => (await getImage({ src, width: Math.min(3072, src.width), format: 'webp', quality: 95 })).src));
 const sides = ['right', 'left', 'right', 'left'];
 
 const checklist = [

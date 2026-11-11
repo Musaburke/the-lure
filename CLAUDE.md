@@ -17,9 +17,9 @@ Astro 7, TypeScript (strict), plain CSS tokens in `src/styles/global.css`. Three
 
 ## Design guardrails
 - One sans, one weight (400), sentence case. Tracking tightens as size grows. Headlines two lines or fewer at every width. One `h1`; every section has a heading.
-- Ground colour follows real light: sea blue to teal-tinted navy, pure black only in the abyss. Flat steps per zone, no gradient bands.
-- One accent, bioluminescent blue-green, rationed to living light, the gauge, progress dots, check feedback and the scam giveaway. Buttons are light pills.
-- Glow only as bioluminescence. No shadows, gradients, glass, hairline dividers, monospace labels, eyebrows or 01/02 counters.
+- Ground colour follows real light: sunlit sea blue at the top, then the "bioluminescent lab at midnight" look Musa chose from his IntegratedBio reference (11 Nov 2026): green-black water, near black in the abyss. Flat steps per zone, no gradient bands.
+- One accent, bioluminescent lime `#cef79e`, rationed to living light, the gauge, progress dots, check feedback and the scam giveaway. Buttons are light pills.
+- Glow only as bioluminescence: the living-light accents and the big out-of-focus forms in `water.ts` (dark masses with glowing rims, brighter as the light goes). No shadows, gradients, glass, hairline dividers, monospace labels, eyebrows or 01/02 counters.
 - The lens never covers a headline.
 - Every heavy effect: reduced-motion path, pause offscreen and when the tab is hidden, a no-JS state where every zone and fact is readable.
 - Animate transform and opacity only. Every control has hover, focus-visible and active states.

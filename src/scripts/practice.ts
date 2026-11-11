@@ -20,8 +20,12 @@ const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(saved)); 
 let depth = 0, streak = 0, rightThisDive = 0;
 const STEP = 100;
 
-// Water colour by depth: the same steps as the story.
-const stops: [number, string][] = [[0, '#0d5274'], [75, '#0b4865'], [200, '#0b405d'], [1000, '#082a3d'], [4000, '#03121a'], [6000, '#000000']];
+// Water colour by depth. Light dies fast (about 1% is left at 200 m), so every right answer in the
+// first kilometre visibly darkens the water, through the green-black of the deep to near black.
+const stops: [number, string][] = [
+  [0, '#0d5274'], [100, '#0c4a5f'], [200, '#0f4048'], [300, '#11373a'], [500, '#112e2d'], [800, '#0f2524'],
+  [1200, '#0c1c1b'], [2000, '#081312'], [3500, '#040a09'], [6000, '#020403'], [11000, '#000000'],
+];
 const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 function groundAt(m: number) {
   for (let k = 0; k < stops.length - 1; k++) {
