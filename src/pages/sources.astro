@@ -1,10 +1,11 @@
 ---
 import Base from '../layouts/Base.astro';
-import { zones, sources, sunlightPhoto } from '../data/zones';
+import { zones, sources, surface } from '../data/zones';
+import { landmarks } from '../data/landmarks';
 
 const gauge = ['noaaPressure', 'noaaLight', 'noaaDeep', 'smithsonianGlow'];
 const photos = [
-  { what: 'Sunlit water (the surface)', ...sunlightPhoto },
+  { what: 'Reef sharks in sunlit water (the surface)', ...surface.photo },
   ...zones.map((z) => ({ what: z.animal, ...z.photo })),
 ];
 ---
@@ -25,6 +26,18 @@ const photos = [
       ))}
     </section>
 
+    <section aria-labelledby="h-marks">
+      <h2 id="h-marks">Landmarks on the way down</h2>
+      <ul>
+        {landmarks.map((l) => <li>{l.m.toLocaleString('en-GB')} m, {l.text.charAt(0).toLowerCase() + l.text.slice(1)}: <a class="link" href={sources[l.source].href}>{sources[l.source].title}</a>, {sources[l.source].by}</li>)}
+      </ul>
+    </section>
+
+    <section aria-labelledby="h-questions">
+      <h2 id="h-questions">The questions</h2>
+      <p>Every message, shop and link in the challenges is made up for practice, using the patterns real scams follow. The brands (Northway Bank, ParcelPost, HM Tax Office and the rest) are invented, and the phone numbers come from the ranges Ofcom keeps aside for fiction, so none of them is real.</p>
+    </section>
+
     <section aria-labelledby="h-gauge">
       <h2 id="h-gauge">The depth gauge</h2>
       <p>The gauge shows typical open-ocean values: pressure rises about one atmosphere every 10 metres, sunlight fades to around 1% by 200 metres and is gone below 1,000 metres, and deep water below about 200 metres averages about 4 °C. Real water varies by place and season. The sound, when you turn it on, is made live in your browser.</p>
@@ -38,7 +51,7 @@ const photos = [
       <ul>
         {photos.map((p) => <li>{p.what}: <a class="link" href={p.href}>photo by {p.credit}</a>, {p.licence}</li>)}
       </ul>
-      <p class="note">Photos are cropped to a circle and slightly zoomed in the lens. Share-alike photos stay under their original licence.</p>
+      <p class="note">Photos are seen through the glass lens, so they are cropped to a circle and gently distorted at the edge; two studio photos get a deep-water tint. Share-alike photos stay under their original licence.</p>
     </section>
 
     <section aria-labelledby="h-help">

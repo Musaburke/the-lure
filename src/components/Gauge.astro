@@ -11,7 +11,8 @@ import { zones } from '../data/zones';
     <div><dt>Water</dt><dd data-g="temp">about 18 °C</dd></div>
     <div><dt>Sunlight</dt><dd data-g="light">100%</dd></div>
   </dl>
-  <ol class="g-dots" aria-label="Lures spotted">
+  <p class="g-mark" data-g="mark" aria-hidden="true"></p>
+  <ol class="g-dots" aria-label="Depths where you spotted the fake">
     {zones.map((z) => (
       <li data-dot={z.id}><span class="visually-hidden">{z.animal}: <span data-dot-state>not spotted yet</span></span></li>
     ))}
@@ -33,6 +34,10 @@ import { zones } from '../data/zones';
   .g-read { display: grid; gap: 0.45rem; }
   .g-read dt { color: var(--muted); }
   .g-read dd { color: var(--text); font-variant-numeric: tabular-nums; }
+  .g-mark { min-height: 2.6em; color: var(--glow); font-size: 0.8125rem; line-height: 1.3; }
+  .g-mark:empty { visibility: hidden; }
+  :global(.js) .g-mark.pop { animation: mark-in 700ms var(--ease-out); }
+  @keyframes mark-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
   .g-dots { list-style: none; padding: 0; display: flex; gap: 0.5rem; margin-top: 0.25rem; }
   .g-dots li { width: 10px; height: 10px; border-radius: 50%; background: rgb(255 255 255 / 0.22); transition: background-color 400ms ease, box-shadow 400ms ease; }
   .g-dots li.on { background: var(--glow); box-shadow: 0 0 10px var(--glow); }
@@ -54,9 +59,9 @@ import { zones } from '../data/zones';
     }
     .g-zone { grid-column: 1 / -1; }
     .g-depth { font-size: 1.75rem; grid-column: 1 / -1; }
-    .g-read { display: none; }
+    .g-read, .g-mark { display: none; }
     .g-dots { grid-column: 1; justify-self: end; margin: 0; }
     .g-sound { grid-column: 2; margin: 0; padding: 0.35rem 0.75rem; min-height: 2rem; }
   }
-  @media (prefers-reduced-motion: reduce) { .g-dots li, .g-sound { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .g-dots li, .g-sound { transition: none; } :global(.js) .g-mark.pop { animation: none; } }
 </style>

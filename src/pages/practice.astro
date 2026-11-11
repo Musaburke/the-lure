@@ -1,0 +1,101 @@
+---
+import { getImage } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import Challenge from '../components/Challenge.astro';
+import { zones } from '../data/zones';
+import { questions } from '../data/questions';
+
+// The lens shows the animal behind each question's trick, in scam order: disguise, crowd, look-alike, bait.
+const order = ['disguise', 'crowd', 'lookalike', 'bait'];
+const byScam = order.map((s) => zones.find((z) => z.scam === s)!);
+const photos = await Promise.all(byScam.map(async (z) => (await getImage({ src: z.photo.src, width: Math.min(2048, z.photo.src.width), format: 'webp', quality: 90 })).src));
+---
+<Base title="Practice dive" description="An endless spot-the-fake game. Every right answer takes you 100 metres deeper past real landmarks of the deep sea.">
+  <canvas class="water" data-water aria-hidden="true"></canvas>
+  <canvas class="lens" data-lens data-photos={JSON.stringify(photos)} data-frames={JSON.stringify(byScam.map((z) => z.frame))} aria-hidden="true"></canvas>
+  <div class="pruler" aria-hidden="true"><div class="strip" data-strip></div><span class="now"></span></div>
+
+  <main id="main" class="practice">
+    <div class="col">
+      <header class="head" data-reveal>
+        <h1>Practice dive</h1>
+        <p class="lead">Spot the fake. Every right answer takes you 100 metres deeper. No timer, no limit.</p>
+      </header>
+
+      <section class="hud" aria-label="Your dive" data-reveal>
+        <dl>
+          <div><dt>Depth</dt><dd data-h="depth">0 m</dd></div>
+          <div><dt>Right this dive</dt><dd data-h="right">0</dd></div>
+          <div><dt>Streak</dt><dd data-h="streak">0</dd></div>
+          <div><dt>Deepest dive</dt><dd data-h="best">0 m</dd></div>
+        </dl>
+        <p class="mark" data-mark aria-live="polite"></p>
+      </section>
+
+      <section aria-labelledby="h-q">
+        <h2 id="h-q" class="visually-hidden">Question</h2>
+        <Challenge heading="" scam="all" first={questions[0]} total={questions.length} practice />
+        <p class="animal" data-animal></p>
+      </section>
+
+      <p class="foot-row">
+        <button type="button" class="link-btn" data-restart>Start again from the surface</button>
+        <button type="button" class="link-btn" data-sound aria-pressed="false">Sound off</button>
+        <a class="link" href="/">Back to the story</a>
+      </p>
+    </div>
+  </main>
+
+  <script>
+    import '../scripts/practice';
+  </script>
+</Base>
+
+<style>
+  :global(body) { background: var(--ground, var(--surface)); }
+  .water { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
+  .lens { display: none; }
+  .pruler { display: none; }
+  .practice { position: relative; z-index: 2; padding: clamp(4rem, 9vh, 6rem) var(--margin) 5rem; }
+  .col { max-width: 38rem; }
+  h1 { font-size: clamp(2.75rem, 1.6rem + 3.6vw, 4.75rem); line-height: 1; letter-spacing: -0.02em; }
+  .lead { margin-top: 1.25rem; font-size: var(--step-lead); line-height: 1.3; color: var(--ink); max-width: 28ch; }
+  .hud { margin-top: 2.5rem; }
+  .hud dl { display: grid; grid-template-columns: repeat(4, auto); justify-content: start; gap: 0.5rem 2.25rem; }
+  .hud dt { color: var(--muted); font-size: var(--step-small); }
+  .hud dd { color: var(--ink); font-size: var(--step-lead); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .mark { margin-top: 0.75rem; min-height: 1.5em; color: var(--glow); font-size: var(--step-small); }
+  :global(.js) .mark.pop { animation: mark-in 800ms var(--ease-out); }
+  @keyframes mark-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .animal { margin-top: 1rem; color: var(--text); min-height: 1.5em; }
+  .foot-row { margin-top: 3rem; display: flex; flex-wrap: wrap; gap: 1rem 2rem; align-items: center; }
+  .link-btn {
+    background: none; border: 0; padding: 0; cursor: pointer; color: var(--ink);
+    text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; text-decoration-color: rgb(255 255 255 / 0.45);
+    transition: text-decoration-color 200ms ease;
+  }
+  .link-btn:hover { text-decoration-color: var(--glow); }
+  .link-btn:active { opacity: 0.8; }
+  .link-btn[aria-pressed='true'] { color: var(--glow); }
+
+  @media (min-width: 900px) {
+    .practice { padding-left: calc(var(--margin) + 1rem); }
+    .col { max-width: min(38rem, calc(50% - 2rem)); }
+    :global(.js) .lens {
+      --m: clamp(1rem, 4vw, 3.5rem);
+      display: block; position: fixed; z-index: 1; top: 50%; right: calc(var(--margin) + 4rem);
+      width: min(36vw, 520px, 64vh); aspect-ratio: 1; height: auto;
+      transform: translate3d(var(--lx, 0px), calc(-50% + var(--ly, 0px)), 0);
+      pointer-events: none;
+    }
+    :global(.js) .pruler { display: block; position: fixed; z-index: 1; top: 0; right: 0.9rem; width: 6rem; height: 100vh; overflow: hidden; pointer-events: none; }
+    .strip { position: absolute; inset: 0 0 auto 0; transition: transform 1200ms var(--ease-out); }
+    .strip :global(.tick) { position: absolute; right: 0; width: 0.5rem; height: 1px; background: rgb(255 255 255 / 0.22); }
+    .strip :global(.tick.major) { width: 0.9rem; background: rgb(255 255 255 / 0.4); }
+    .strip :global(.tick.major)::after { content: attr(data-label); position: absolute; right: 1.3rem; top: -0.55rem; white-space: nowrap; font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .strip :global(.mark) { position: absolute; right: -0.15rem; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 10px var(--glow); }
+    .now { position: absolute; top: 50%; right: 0; width: 1.6rem; height: 2px; background: var(--glow); box-shadow: 0 0 8px var(--glow); }
+  }
+  @media (max-width: 899px) { .hud dl { grid-template-columns: repeat(2, auto); } }
+  @media (prefers-reduced-motion: reduce) { .strip { transition: none; } :global(.js) .mark.pop { animation: none; } .link-btn { transition: none; } }
+</style>

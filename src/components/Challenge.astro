@@ -1,0 +1,73 @@
+---
+// A spot-the-fake challenge. The first question is rendered here so it works without JS
+// (with the answer in a <details>); with JS, src/scripts/challenge.ts takes over and adds
+// "Try another". Cards are real interface fragments (data-ui), so they keep their own chrome.
+import type { Question } from '../data/questions';
+interface Props { heading: string; scam: string; first: Question; total: number; practice?: boolean }
+const { heading, scam, first, total, practice = false } = Astro.props;
+const label = { text: 'Text message', email: 'Email', shop: 'Listing', link: 'Link', profile: 'Profile' } as const;
+const fake = first.cards.find((c) => c.fake);
+---
+<div class="challenge" data-challenge data-scam={scam} data-first={first.id}>
+  {heading && <h3>{heading}</h3>}
+  <p class="goal" data-goal>{first.goal}</p>
+  <div class="cards" data-cards role="group" aria-label="Pick the fake">
+    {first.cards.map((c, i) => (
+      <button type="button" class:list={['card', `k-${c.kind}`]} data-i={i} data-ui>
+        <span class="c-head"><span class="visually-hidden">{label[c.kind]} {i + 1}: </span><span class="c-from">{c.from}</span>{c.meta && <span class="c-meta">{c.meta}</span>}</span>
+        {c.subject && <span class="c-subject">{c.subject}</span>}
+        {c.body.map((l) => <span class="c-line">{l}</span>)}
+      </button>
+    ))}
+  </div>
+  <div class="result" data-result aria-live="polite"></div>
+  <p class="actions">
+    <button type="button" class="btn" data-next hidden>{practice ? 'Next question' : 'Try another'}</button>
+    {!practice && <span class="count" data-count>1 of {total}</span>}
+  </p>
+  <noscript>
+    <details class="answer"><summary class="link">Show the answer</summary><p>The fake is message {first.cards.indexOf(fake!) + 1}. {first.why}</p></details>
+  </noscript>
+</div>
+
+<style>
+  .challenge { margin-top: clamp(3rem, 6vw, 4.5rem); }
+  h3 { font-size: var(--step-lead); line-height: 1.2; letter-spacing: -0.006em; }
+  .goal { margin-top: 0.75rem; color: var(--ink); font-size: var(--step-body); max-width: 34rem; }
+  .cards { margin-top: 1.5rem; display: grid; gap: 0.85rem; }
+  .actions { margin-top: 1.25rem; display: flex; align-items: center; gap: 1.25rem; min-height: 3.25rem; }
+  .count { color: var(--muted); font-size: var(--step-small); font-variant-numeric: tabular-nums; }
+  .answer { margin-top: 1rem; }
+  .answer summary { cursor: pointer; width: fit-content; }
+  .answer p { margin-top: 0.5rem; max-width: 34rem; }
+
+  /* Cards: phone and inbox chrome (interface fragments). */
+  .challenge :global(.card) {
+    display: grid; gap: 0.35rem; width: 100%; text-align: left; cursor: pointer;
+    padding: 0.95rem 1.1rem 1.05rem; border: 0; border-radius: 18px;
+    background: var(--bubble); color: var(--ink); font-size: 1rem; line-height: 1.45;
+    transition: transform 220ms var(--ease-out), background-color 200ms ease, opacity 300ms ease, box-shadow 300ms ease;
+  }
+  .challenge :global(.card.k-text) { border-radius: 20px 20px 20px 6px; }
+  .challenge :global(.card:hover) { background: var(--bubble-hover); transform: translateY(-2px); }
+  .challenge :global(.card:active) { transform: scale(0.985); }
+  .challenge :global(.card[aria-disabled='true']) { cursor: default; transform: none; }
+  .challenge :global(.c-head) { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.15rem 0.6rem; }
+  .challenge :global(.c-from) { color: var(--ink); }
+  .challenge :global(.c-meta) { color: var(--muted); font-size: var(--step-small); overflow-wrap: anywhere; }
+  .challenge :global(.k-link .c-meta) { order: -1; flex-basis: 100%; color: var(--glow); font-size: 1rem; }
+  .challenge :global(.c-subject) { color: var(--ink); }
+  .challenge :global(.c-line) { color: var(--text); }
+  .challenge :global(.card.is-real) { opacity: 0.55; }
+  .challenge :global(.card.is-fake) { box-shadow: inset 0 0 0 2px var(--glow), 0 0 28px rgb(79 230 212 / 0.25); /* bioluminescent: the answer lights up */ }
+  .challenge :global(mark.tell) { background: var(--glow); color: var(--pill-ink); border-radius: 4px; padding: 0 0.2em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+
+  .result { margin-top: 1.25rem; display: grid; gap: 0.5rem; max-width: 34rem; }
+  .result:empty { display: none; }
+  .result :global(.r-verdict) { font-size: var(--step-lead); color: var(--ink); line-height: 1.2; }
+  .challenge[data-state='right'] .result :global(.r-verdict)::before {
+    content: ''; display: inline-block; width: 0.5em; height: 0.5em; margin-right: 0.5em; border-radius: 50%;
+    background: var(--glow); box-shadow: 0 0 12px var(--glow); vertical-align: 0.12em;
+  }
+  @media (prefers-reduced-motion: reduce) { .challenge :global(.card) { transition: none; } }
+</style>

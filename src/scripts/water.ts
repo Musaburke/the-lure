@@ -1,0 +1,212 @@
+// The living water behind the page: sunlight shafts near the surface, creature silhouettes that
+// drift past at the depths they really live, glowing plankton that lights up near the pointer,
+// and bubbles. One canvas, one loop. Glow comes from a pre-drawn sprite (no shadowBlur), the pixel
+// ratio is capped, and everything pauses when the tab is hidden. Reduced motion: still frames.
+
+const GLOW = '79, 230, 212';
+
+type Speck = { x: number; y: number; r: number; base: number; vy: number; ph: number; lit: number };
+type Creature = { kind: 'fish' | 'jelly' | 'whale' | 'lantern' | 'lure'; d: number; x: number; v: number; s: number; ph: number; a: number };
+type Bubble = { x: number; y: number; r: number; vy: number; life: number };
+
+const FISH = new Path2D('M-50 0 C-30 -15 15 -16 32 -3 L50 -14 L46 0 L50 14 L32 3 C15 16 -30 15 -50 0 Z');
+const WHALE = new Path2D('M-100 -14 C-60 -24 20 -22 54 -14 C70 -10 78 -2 80 6 C70 16 30 20 -20 18 C-50 17 -80 12 -100 6 L-128 -10 L-122 4 L-132 18 L-104 10 Z');
+const BELL = new Path2D('M-22 0 C-22 -30 22 -30 22 0 Q11 5 0 0 Q-11 5 -22 0 Z');
+
+export function mountWater(canvas: HTMLCanvasElement, reduced: boolean) {
+  const ctx = canvas.getContext('2d')!;
+  let w = 0, h = 0, dpr = 1;
+  let specks: Speck[] = [];
+  const bubbles: Bubble[] = [];
+  let px = -9999, py = -9999, lastScroll = window.scrollY, raf = 0, running = false;
+  let depth = 0, need = true;
+
+  // A soft teal dot, drawn once and stamped many times.
+  const sprite = document.createElement('canvas');
+  sprite.width = sprite.height = 64;
+  {
+    const s = sprite.getContext('2d')!;
+    const g = s.createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0, `rgba(${GLOW}, 1)`);
+    g.addColorStop(0.18, `rgba(${GLOW}, 0.85)`);
+    g.addColorStop(0.45, `rgba(${GLOW}, 0.18)`);
+    g.addColorStop(1, `rgba(${GLOW}, 0)`);
+    s.fillStyle = g;
+    s.fillRect(0, 0, 64, 64);
+  }
+
+  // Creatures live at fixed depths; you sink past them.
+  const creatures: Creature[] = [];
+  const add = (kind: Creature['kind'], d: number, s: number, a: number) =>
+    creatures.push({ kind, d, x: Math.random(), v: (0.012 + Math.random() * 0.02) * (Math.random() < 0.5 ? -1 : 1), s, ph: Math.random() * 6.28, a });
+  for (let k = 0; k < 9; k++) add('fish', 18 + Math.random() * 40, 0.35 + Math.random() * 0.2, 0.32);
+  for (let k = 0; k < 6; k++) add('fish', 90 + Math.random() * 60, 0.3 + Math.random() * 0.2, 0.26);
+  add('jelly', 140, 1, 0.3); add('jelly', 420, 0.8, 0.3); add('jelly', 760, 1.2, 0.28);
+  add('whale', 520, 1.6, 0.34); add('whale', 900, 1.3, 0.3);
+  for (let k = 0; k < 8; k++) add('lantern', 300 + Math.random() * 900, 0.4 + Math.random() * 0.3, 1);
+  for (let k = 0; k < 4; k++) add('lure', 1300 + Math.random() * 2500, 1, 1);
+
+  function seed() {
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    w = window.innerWidth;
+    h = window.innerHeight;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    const n = Math.min(w < 700 ? 55 : 120, Math.round((w * h) / 11000));
+    specks = Array.from({ length: n }, () => ({
+      x: Math.random() * w, y: Math.random() * h,
+      r: 0.6 + Math.random() * Math.random() * 2,
+      base: 0.12 + Math.random() * 0.3,
+      vy: 0.04 + Math.random() * 0.12,
+      ph: Math.random() * 6.28, lit: 0,
+    }));
+    need = true;
+  }
+
+  // How many metres fit in one screen height: tight near the surface, wide in the deep.
+  const span = (m: number) => Math.min(2600, Math.max(70, m * 0.9));
+
+  function frame(now: number) {
+    const t = now / 1000;
+    const dy = window.scrollY - lastScroll;
+    lastScroll = window.scrollY;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const sun = Math.max(0, 1 - depth / 230);
+    const dark = Math.min(1, depth / 900);
+
+    // Sunlight shafts, fading out by about 230 m.
+    if (sun > 0.01) {
+      for (let k = 0; k < 6; k++) {
+        const x0 = w * (0.12 + k * 0.17) + Math.sin(t * 0.15 + k * 1.7) * 40;
+        const spread = 60 + k * 18;
+        const g = ctx.createLinearGradient(0, 0, 0, h);
+        g.addColorStop(0, `rgba(210, 240, 255, ${0.09 * sun})`);
+        g.addColorStop(1, 'rgba(210, 240, 255, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(x0 - 18, -10);
+        ctx.lineTo(x0 + 18, -10);
+        ctx.lineTo(x0 + spread + 120, h);
+        ctx.lineTo(x0 + spread - 40, h);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    // Creatures.
+    const mPerPx = span(depth) / h;
+    for (const c of creatures) {
+      const y = h * 0.5 + (c.d - depth) / mPerPx;
+      if (y < -200 || y > h + 200) continue;
+      if (!reduced) c.x += c.v * 0.016;
+      if (c.x > 1.2) c.x = -0.2;
+      if (c.x < -0.2) c.x = 1.2;
+      const x = c.x * w;
+      const bob = reduced ? 0 : Math.sin(t * 0.8 + c.ph) * 6;
+      ctx.save();
+      ctx.translate(x, y + bob);
+      if (c.kind === 'fish' || c.kind === 'whale') {
+        ctx.scale(c.s * (c.v < 0 ? -1 : 1), c.s);
+        ctx.fillStyle = `rgba(2, 14, 22, ${c.a * (1 - dark * 0.6)})`;
+        ctx.fill(c.kind === 'fish' ? FISH : WHALE);
+      } else if (c.kind === 'jelly') {
+        ctx.scale(c.s, c.s);
+        const pulse = reduced ? 1 : 1 + Math.sin(t * 1.6 + c.ph) * 0.06;
+        ctx.scale(pulse, 2 - pulse);
+        ctx.fillStyle = `rgba(190, 235, 255, ${0.08 + 0.1 * dark})`;
+        ctx.fill(BELL);
+        ctx.strokeStyle = `rgba(190, 235, 255, ${0.07 + 0.08 * dark})`;
+        ctx.lineWidth = 1.2;
+        for (let k = -2; k <= 2; k++) {
+          ctx.beginPath();
+          ctx.moveTo(k * 7, 2);
+          ctx.bezierCurveTo(k * 7 + 6 * Math.sin(t + k), 20, k * 7 - 6 * Math.sin(t + k), 40, k * 7, 58);
+          ctx.stroke();
+        }
+      } else if (c.kind === 'lantern') {
+        // Lanternfish: a faint body and a row of glowing photophores.
+        ctx.scale(c.s * (c.v < 0 ? -1 : 1), c.s);
+        ctx.fillStyle = `rgba(4, 20, 28, ${0.35 * dark})`;
+        ctx.fill(FISH);
+        ctx.globalCompositeOperation = 'lighter';
+        for (let k = 0; k < 5; k++) ctx.drawImage(sprite, -34 + k * 13 - 6, 6, 12, 12);
+        ctx.globalCompositeOperation = 'source-over';
+      } else {
+        // An anglerfish lure: one light, bobbing, slowly pulsing.
+        const p = reduced ? 0.8 : 0.6 + 0.4 * Math.sin(t * 1.3 + c.ph);
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = p * dark;
+        ctx.drawImage(sprite, -18, -18, 36, 36);
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+      }
+      ctx.restore();
+    }
+
+    // Plankton.
+    ctx.globalCompositeOperation = 'lighter';
+    const intensity = 0.25 + 0.75 * dark;
+    for (const s of specks) {
+      if (!reduced) {
+        s.y -= s.vy + dy * (0.1 + s.r * 0.1);
+        s.x += Math.sin(t * 0.4 + s.ph) * 0.08;
+        if (s.y < -10) { s.y = h + 10; s.x = Math.random() * w; }
+        if (s.y > h + 10) { s.y = -10; s.x = Math.random() * w; }
+        const d = Math.hypot(s.x - px, s.y - py);
+        const target = d < 150 ? (1 - d / 150) ** 2 : 0;
+        s.lit += (target > s.lit ? 0.25 : 0.025) * (target - s.lit);
+      }
+      const a = Math.min(1, s.base * intensity + s.lit);
+      const size = s.r * (5 + s.lit * 6);
+      ctx.globalAlpha = a;
+      ctx.drawImage(sprite, s.x - size, s.y - size, size * 2, size * 2);
+    }
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Bubbles.
+    if (!reduced && Math.abs(dy) > 40 && bubbles.length < 60) for (let k = 0; k < 2; k++) burst(Math.random() * w, h + 10, 1);
+    for (let k = bubbles.length - 1; k >= 0; k--) {
+      const b = bubbles[k];
+      b.y -= b.vy;
+      b.x += Math.sin(b.y / 30) * 0.4;
+      b.life -= 0.006;
+      if (b.y < -20 || b.life <= 0) { bubbles.splice(k, 1); continue; }
+      ctx.strokeStyle = `rgba(220, 245, 255, ${0.45 * b.life})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, 6.283);
+      ctx.stroke();
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.5 * b.life})`;
+      ctx.fillRect(b.x - b.r * 0.4, b.y - b.r * 0.5, 1.5, 1.5);
+    }
+    need = false;
+  }
+
+  function burst(x: number, y: number, n: number) {
+    for (let k = 0; k < n; k++) bubbles.push({ x: x + (Math.random() - 0.5) * 40, y: y + Math.random() * 20, r: 1.5 + Math.random() * 4, vy: 0.6 + Math.random() * 1.4, life: 1 });
+  }
+
+  function loop(now: number) { frame(now); raf = requestAnimationFrame(loop); }
+  function start() { if (running || reduced) return; running = true; raf = requestAnimationFrame(loop); }
+  function stop() { running = false; cancelAnimationFrame(raf); }
+
+  if (!reduced) {
+    window.addEventListener('pointermove', (e) => { px = e.clientX; py = e.clientY; }, { passive: true });
+    window.addEventListener('pointerdown', (e) => { px = e.clientX; py = e.clientY; }, { passive: true });
+    document.addEventListener('pointerleave', () => { px = py = -9999; });
+  }
+  document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
+  let rt = 0;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = window.setTimeout(seed, 150); });
+  seed();
+  frame(performance.now());
+  start();
+  if (reduced) { const tick = () => { if (need) frame(performance.now()); requestAnimationFrame(tick); }; requestAnimationFrame(tick); }
+
+  return {
+    setDepth(m: number) { if (Math.abs(m - depth) > 0.5) { depth = m; need = true; } },
+    burst(x: number, y: number, n = 14) { if (!reduced) burst(x, y, n); },
+  };
+}

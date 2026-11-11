@@ -74,3 +74,14 @@ We borrow principles, not their colours, fonts, logos or layouts.
 - Photos come from Wikimedia Commons and Flickr (public domain and CC). Only the hatchetfish is a NOAA photo; NOAA had no usable shots of the others. The two studio photos get a deep-water tint in the lens.
 - The abyss lens has no photo: it goes dark, with one point of living light.
 - UK reporting uses Report Fraud, which replaced Action Fraud in December 2025.
+
+## Round 2 (11 Nov 2026), after Musa tried v1
+Inspired by Krillion (krillion.io): you earn depth by answering, a ruler of real landmarks, ambient life. Not copied: its pixel art, boat or monospace type.
+- Every stage now tells one story in three beats: the animal's trick, the same trick online, then a "spot the fake" challenge with a plain goal.
+- The siphonophore teaches fake crowds (reviews, followers, sales counters) instead of botnets.
+- 40-question bank (`src/data/questions.ts`), "Try another" on each stage, and an endless practice dive (`/practice`).
+- The lens is real glass now: a WebGL shader with refraction, gloss and highlights that leans, dents and ripples when you touch it.
+- Sunlight shafts, creature silhouettes, bubbles and a depth ruler with sourced landmarks (`src/data/landmarks.ts`).
+- Lag fixed: layout measured once, no reflow in the scroll handler, plankton glow from a sprite. Measured 60 fps at 4× CPU slowdown.
+- Full-resolution photos (2,700 to 3,100 px originals), lens textures at 2,048 px; a 3,000 px CC0 sunlit-water photo for the surface.
+- Sound about 9% of its old level, fading in, with a soft chime on right answers.
