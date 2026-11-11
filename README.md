@@ -39,6 +39,7 @@ npm install
 npm run dev      # http://localhost:4321
 npm test         # link checker and question bank tests
 npm run check    # type check + production build
+npm run deploy   # build and publish to Cloudflare Pages
 ```
 
-Built with Astro 7 and TypeScript. Hosted on Cloudflare Pages.
+Built with Astro 7 and TypeScript. Live at **https://the-lure.pages.dev**, hosted on Cloudflare Pages (`npm run deploy`).
