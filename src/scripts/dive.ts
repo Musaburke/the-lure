@@ -11,7 +11,6 @@ import { pressureAtm, tempC, lightPct, formatLight } from './ocean';
 import { byScam, type Scam } from '../data/questions';
 import { landmarks } from '../data/landmarks';
 import { markNode } from './ruler';
-import { lenis } from './smooth';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const root = document.documentElement;
@@ -96,14 +95,11 @@ function buildRuler() {
 /* ---------- The scroll frame ---------- */
 const smooth = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const mix = (a: number[], b: number[], t: number) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
-const PAD = 32, FIT_MIN = 0.3;
 let lastDepth = -1, lastMark = '', lastGround = '';
 const band = $<HTMLElement>('.band');
-// Without smooth page scrolling, the crossing glides after the scroll: `eased` chases the scroll's
-// target with a time constant, so wheel steps become one swoop.
-const GLIDE = 0.32; // seconds, only when the page itself scrolls natively (reduced motion is instant)
-const smoothPage = !!lenis; // with smooth page scrolling the lens rides the page, like the text
-let eased = -1, lastT = 0, lensK = -1, gliding = false;
+// The lens follows its goal on a spring: OMEGA sets how quickly (about a second to settle).
+const OMEGA = 5;
+let spring: number[][] = [], lastT = 0, gliding = false;
 
 function update() {
   const mid = window.scrollY + vh * 0.5;
@@ -123,50 +119,42 @@ function update() {
     if (band) band.style.backgroundColor = ground;
   }
 
-  // Lens: it sits beside the text, then swoops to the other side through the gap between one
-  // stage's text and the next: it dips into the gap as the gap rises, glides across, then rides up
-  // under the old text until that text has cleared. It shrinks only as much as the gap needs.
-  // Every bound moves continuously with the scroll, so the lens never jumps or covers text.
-  const full = (lensSize * 0.96) / 2;
-  let atK = 0;
-  while (atK < stages.length - 1 && stages[atK].colBottom - window.scrollY + PAD + full <= vh * 0.5 - 8) atK++;
-  // Finish one crossing before starting the next, so the lens never snaps between them; a big
-  // jump (a link to a section) moves straight there.
-  if (lensK < 0 || reduced || Math.abs(atK - lensK) > 1) { lensK = atK; eased = -1; }
-  else if (atK > lensK && eased >= 0.999) { lensK = atK; eased = 0; }
-  else if (atK < lensK && eased <= 0.001) { lensK = atK; eased = 1; }
-  const k = lensK;
-  const from = stages[Math.min(k, stages.length - 1)], to = stages[Math.min(k + 1, stages.length - 1)];
-  const gapTop = from.colBottom - window.scrollY, gapBottom = to.colTop - window.scrollY;
-  const target = to === from ? 0 : 1 - smooth(vh * 0.35, vh * 1.0, (gapTop + gapBottom) / 2);
-  const now = performance.now();
-  const dt = Math.min(0.1, (now - lastT) / 1000);
-  lastT = now;
-  if (eased < 0 || smoothPage) eased = target;
-  else eased += (target - eased) * (1 - Math.exp(-dt / GLIDE));
-  const move = Math.abs(target - eased) < 0.0005 ? target : eased;
-  gliding = move !== target || atK !== lensK;
-  const dip = smooth(0, 0.2, move), across = smooth(0.2, 0.8, move), away = smooth(0.8, 1, move);
+  // Lens: one bubble that stays on screen the whole way down, beside each zone's text. Between
+  // zones it drifts across to the other side, sinking a little as it goes, and it never jumps:
+  // the scroll only sets where it is heading, and a spring carries it there, so it floats after
+  // the page like something in water. Text sits on a layer above it.
+  let k = 0;
+  const gapMid = (n: number) => (stages[n].colBottom + stages[n + 1].colTop) / 2 - window.scrollY;
+  while (k < stages.length - 2 && gapMid(k) <= vh * 0.25) k++;
+  const from = stages[k], to = stages[Math.min(k + 1, stages.length - 1)];
+  const t = to === from ? 0 : 1 - smooth(vh * 0.25, vh * 0.95, gapMid(k));
   if (lensCanvas && wide.matches) {
     const a = gaugePx + marginPx, z = vw - marginPx;
     const xFor = (st: Stage) => (st.side === 'left' ? a + (z - a) * 0.75 : a + (z - a) * 0.25);
-    const cx = xFor(from) + (xFor(to) - xFor(from)) * across;
-    const fit = Math.min(1, Math.max(FIT_MIN, (gapBottom - gapTop - 2 * PAD) / (lensSize * 0.96)));
-    const scale = 1 - (1 - fit) * dip * (1 - away);
-    const r = full * scale;
+    const xA = xFor(from), xB = xFor(to);
+    const arc = Math.sin(Math.PI * t);
+    const goal = [xA + (xB - xA) * smooth(0, 1, t), vh * (0.5 + 0.1 * arc), 1 - 0.08 * arc];
+    const now = performance.now();
+    const dt = Math.min(1 / 30, (now - lastT) / 1000);
+    lastT = now;
+    if (!spring.length || reduced) spring = goal.map((g) => [g, 0]);
+    else spring = spring.map(([x, v], n) => {
+      // Critically damped: it eases in and settles without overshooting.
+      const acc = OMEGA * OMEGA * (goal[n] - x) - 2 * OMEGA * v;
+      const nv = v + acc * dt;
+      return [x + nv * dt, nv];
+    });
+    gliding = spring.some(([x, v], n) => Math.abs(v) > 0.05 || Math.abs(goal[n] - x) > (n === 2 ? 0.0005 : 0.3));
+    const [cx, cy, scale] = spring.map(([x]) => x);
     const sway = reduced ? 0 : Math.sin(window.scrollY / 380) * 8;
-    let cy = vh * 0.5 + sway;
-    // Below the text it is leaving: eased in while the lens is still on its own side.
-    const below = gapTop + PAD + r;
-    if (to !== from && cy < below) cy += (below - cy) * dip;
-    // Above the text it is heading away from, until it has moved clear of that column.
-    const above = gapBottom - PAD - r;
-    if (to !== from && cy > above) cy -= (cy - above) * (1 - away);
-    lensCanvas.style.transform = `translate3d(calc(${(cx - lensSize / 2).toFixed(1)}px + var(--lx, 0px)), calc(-50% + ${(cy - vh * 0.5).toFixed(1)}px + var(--ly, 0px)), 0) scale(${(scale * 0.96).toFixed(3)})`;
-  } else if (lensCanvas) {
-    lensCanvas.style.transform = '';
+    lensCanvas.style.transform = `translate3d(calc(${(cx - lensSize / 2).toFixed(1)}px + var(--lx, 0px)), calc(-50% + ${(cy - vh * 0.5 + sway).toFixed(1)}px + var(--ly, 0px)), 0) scale(${(scale * 0.96).toFixed(3)})`;
+    // The photo changes as the bubble passes the middle of its journey.
+    lens?.show(xB === xA ? (t > 0.5 ? to.photo : from.photo) : (cx - xA) / (xB - xA) > 0.5 ? to.photo : from.photo);
+  } else {
+    if (lensCanvas) lensCanvas.style.transform = '';
+    gliding = false;
+    lens?.show(t > 0.5 ? to.photo : from.photo);
   }
-  lens?.show(across > 0.5 ? to.photo : from.photo);
   lens?.setGlow(Math.min(1, depth / 1200));
   water?.setDepth(depth);
 

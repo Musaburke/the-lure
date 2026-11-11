@@ -250,8 +250,8 @@ const checklist = [
      keeps to its own half. */
   @media (min-width: 900px) {
     .stage { padding-right: calc(var(--margin) + 3rem); }
-    /* Room between zones for the lens to swoop across at a good size. */
-    :global(.js) .zone { padding-top: max(var(--section), 45svh); }
+    /* Open water between zones, room for the lens to drift across at full size. */
+    :global(.js) .zone { padding-top: max(var(--section), 70svh); }
     .col, .hero .col, .end .col { max-width: min(36rem, calc(50% - 2rem)); }
     /* The depth ruler runs down the right edge of the page, in the page itself, so it scrolls for free. */
     :global(.js) .ruler { display: block; position: absolute; z-index: 1; top: 0; right: 0.9rem; width: 2.5rem; pointer-events: none; }

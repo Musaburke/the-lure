@@ -20,7 +20,7 @@ Astro 7, TypeScript (strict), plain CSS tokens in `src/styles/global.css`. Three
 - Ground colour follows real light: sunlit sea blue at the top, then the "bioluminescent lab at midnight" look Musa chose from his IntegratedBio reference (11 Nov 2026): green-black water, near black in the abyss. Flat steps per zone, no gradient bands.
 - One accent, bioluminescent lime `#cef79e`, rationed to living light, the gauge, progress dots, check feedback and the scam giveaway. Buttons are light pills.
 - Glow only as bioluminescence: the living-light accents and the big out-of-focus forms in `water.ts` (dark masses with glowing rims, brighter as the light goes). No shadows, gradients, glass, hairline dividers, monospace labels, eyebrows or 01/02 counters.
-- The lens never covers a headline.
+- The lens is one bubble that stays on screen and floats after the scroll on a spring, beside each zone's text, drifting across between zones like ThoughtLab's sphere (Musa's reference, 11 Nov 2026). Text sits on a layer above it; at rest it never covers text (`tools/overlap.cjs`).
 - Every heavy effect: reduced-motion path, pause offscreen and when the tab is hidden, a no-JS state where every zone and fact is readable.
 - Animate transform and opacity only. Every control has hover, focus-visible and active states.
 

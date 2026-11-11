@@ -97,3 +97,6 @@ Musa: the site feels childish, small and too easy; it must impress an employer, 
 - End: "If you've been scammed" section with sourced UK steps, before the link checker.
 - Link preview image (`og:image`).
 - Not shipping yet.
+
+## Round 5 (11 Nov 2026): the ThoughtLab float
+Musa: the swoop wasn't fluid; he wants the lens to move exactly like the sphere on thoughtlab.com. From his screen recording: one bubble stays on screen the whole page at about the same size, drifts between positions with a lag, and text slides over it. Built: Lenis smooth page scrolling (`src/scripts/smooth.ts`), and the lens follows a scroll-set goal on a critically damped spring (`OMEGA` in `dive.ts`), sinking slightly mid-crossing. Text may pass over it mid-glide; at rest it sits clear.
