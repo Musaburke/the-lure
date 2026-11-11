@@ -10,6 +10,7 @@ import { mountLinkChecker } from './linkui';
 import { pressureAtm, tempC, lightPct, formatLight } from './ocean';
 import { byScam, type Scam } from '../data/questions';
 import { landmarks } from '../data/landmarks';
+import { markNode } from './ruler';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const root = document.documentElement;
@@ -75,26 +76,26 @@ function buildRuler() {
   for (let m = 0; m <= 200; m += 25) ticks.push([m, m % 100 === 0]);
   for (let m = 300; m <= 1000; m += 100) ticks.push([m, m % 500 === 0 || m === 1000]);
   for (let m = 1500; m <= 4500; m += 500) ticks.push([m, m % 1000 === 0]);
+  // The story's dive stops in the abyss; deeper landmarks belong to the practice dive.
+  const bottom = stages[stages.length - 1].d1;
+  const shown = landmarks.filter((l) => l.m <= bottom);
+  const marks = shown.map((l) => depthToY(l.m));
   for (const [m, major] of ticks) {
     const t = document.createElement('span');
     t.className = major ? 'tick major' : 'tick';
-    t.style.top = `${depthToY(m)}px`;
-    if (major) t.dataset.label = `${m.toLocaleString('en-GB')} m`;
+    const y = depthToY(m);
+    t.style.top = `${y}px`;
+    // A landmark's own label already gives its depth, so skip a depth label that would sit on it.
+    if (major && !marks.some((my) => Math.abs(my - y) < 22)) t.dataset.label = `${m.toLocaleString('en-GB')} m`;
     ruler.append(t);
   }
-  for (const l of landmarks) {
-    const d = document.createElement('span');
-    d.className = 'mark';
-    d.style.top = `${depthToY(l.m)}px`;
-    d.title = `${l.text}, ${l.m.toLocaleString('en-GB')} m`;
-    ruler.append(d);
-  }
+  shown.forEach((l, k) => ruler.append(markNode(l, marks[k])));
 }
 
 /* ---------- The scroll frame ---------- */
 const smooth = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const mix = (a: number[], b: number[], t: number) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
-const SMALL = 0.26, PAD = 14;
+const PAD = 32, FIT_MIN = 0.3;
 let lastDepth = -1, lastMark = '';
 
 function update() {
@@ -108,33 +109,37 @@ function update() {
   const [r, gg, b] = mix(s.ground, next.ground, smooth(0.82, 1, p));
   root.style.setProperty('--ground', `rgb(${r} ${gg} ${b})`);
 
-  // Lens: shrink in place, cross only while it fits in the gap between texts, grow on the far side.
-  let home = 0, scale = 1, move = 0;
-  const spans = stages.slice(0, -1).map((st, k) => {
-    const a0 = st.colBottom - lensSize / 2;
-    let a1 = st.colBottom + (lensSize * SMALL) / 2 + PAD;
-    let b1 = stages[k + 1].colTop - (lensSize * SMALL) / 2 - PAD;
-    if (b1 < a1) b1 = a1 = (a1 + b1) / 2;
-    return { a0, a1, b1, c1: stages[k + 1].colTop + lensSize / 2 };
-  });
-  spans.forEach((sp, k) => { if (mid >= sp.c1) home = k + 1; });
-  const sp = spans[home];
-  if (sp && mid > sp.a0) {
-    if (mid < sp.a1) scale = 1 - (1 - SMALL) * smooth(sp.a0, sp.a1, mid);
-    else if (mid < sp.b1) { scale = SMALL; move = smooth(sp.a1, sp.b1, mid); }
-    else { scale = SMALL + (1 - SMALL) * smooth(sp.b1, sp.c1, mid); move = 1; }
-  }
-  const from = stages[home], to = stages[Math.min(home + 1, stages.length - 1)];
+  // Lens: it sits beside the text, then swoops to the other side through the gap between one
+  // stage's text and the next: it dips into the gap as the gap rises, glides across, then rides up
+  // under the old text until that text has cleared. It shrinks only as much as the gap needs.
+  // Every bound moves continuously with the scroll, so the lens never jumps or covers text.
+  const full = (lensSize * 0.96) / 2;
+  let k = 0;
+  while (k < stages.length - 1 && stages[k].colBottom - window.scrollY + PAD + full <= vh * 0.5 - 8) k++;
+  const from = stages[Math.min(k, stages.length - 1)], to = stages[Math.min(k + 1, stages.length - 1)];
+  const gapTop = from.colBottom - window.scrollY, gapBottom = to.colTop - window.scrollY;
+  const move = to === from ? 0 : 1 - smooth(vh * 0.5, vh * 0.9, (gapTop + gapBottom) / 2);
+  const dip = smooth(0, 0.2, move), across = smooth(0.2, 0.8, move), away = smooth(0.8, 1, move);
   if (lensCanvas && wide.matches) {
     const a = gaugePx + marginPx, z = vw - marginPx;
-    const xFor = (st: Stage) => (st.side === 'left' ? a + (z - a) * 0.75 : a + (z - a) * 0.25) - lensSize / 2;
-    const x = xFor(from) + (xFor(to) - xFor(from)) * move;
+    const xFor = (st: Stage) => (st.side === 'left' ? a + (z - a) * 0.75 : a + (z - a) * 0.25);
+    const cx = xFor(from) + (xFor(to) - xFor(from)) * across;
+    const fit = Math.min(1, Math.max(FIT_MIN, (gapBottom - gapTop - 2 * PAD) / (lensSize * 0.96)));
+    const scale = 1 - (1 - fit) * dip * (1 - away);
+    const r = full * scale;
     const sway = reduced ? 0 : Math.sin(window.scrollY / 380) * 8;
-    lensCanvas.style.transform = `translate3d(calc(${x.toFixed(1)}px + var(--lx, 0px)), calc(-50% + ${sway.toFixed(1)}px + var(--ly, 0px)), 0) scale(${(scale * 0.96).toFixed(3)})`;
+    let cy = vh * 0.5 + sway;
+    // Below the text it is leaving: eased in while the lens is still on its own side.
+    const below = gapTop + PAD + r;
+    if (to !== from && cy < below) cy += (below - cy) * dip;
+    // Above the text it is heading away from, until it has moved clear of that column.
+    const above = gapBottom - PAD - r;
+    if (to !== from && cy > above) cy -= (cy - above) * (1 - away);
+    lensCanvas.style.transform = `translate3d(calc(${(cx - lensSize / 2).toFixed(1)}px + var(--lx, 0px)), calc(-50% + ${(cy - vh * 0.5).toFixed(1)}px + var(--ly, 0px)), 0) scale(${(scale * 0.96).toFixed(3)})`;
   } else if (lensCanvas) {
     lensCanvas.style.transform = '';
   }
-  lens?.show(move > 0.5 ? to.photo : from.photo);
+  lens?.show(across > 0.5 ? to.photo : from.photo);
   lens?.setGlow(Math.min(1, depth / 1200));
   water?.setDepth(depth);
 

@@ -1,5 +1,6 @@
-// Every stage of the dive, top to bottom. Each tells one story in three beats:
-// the animal's trick, the same trick online, then a spot-the-fake challenge from the question bank.
+// Every stage of the dive, top to bottom. Each tells one story in five beats: the animal's trick,
+// the same trick online, how one real scam of that kind plays out, the real UK numbers, then a
+// spot-the-fake challenge from the question bank.
 // Facts here must match a source in `sources`. Unknown means TODO(musa), never a guess.
 import type { ImageMetadata } from 'astro';
 import type { Scam } from './questions';
@@ -8,6 +9,7 @@ import hatchet from '../assets/zones/hatchetfish.jpg';
 import siphon from '../assets/zones/siphonophore.jpg';
 import angler from '../assets/zones/anglerfish.jpg';
 import sharks from '../assets/zones/surface-sharks.jpg';
+import beluga from '../assets/zones/beluga.jpg';
 
 export type Zone = {
   id: string;
@@ -19,7 +21,10 @@ export type Zone = {
   latin: string;
   trick: { head: string; facts: string[] };   // beat 1: what the animal does
   online: { head: string; text: string[] };   // beat 2: the same trick, done by scammers
-  challenge: string;                          // beat 3: heading over the spot-the-fake question
+  // beat 3: one realistic scam, step by step; `stop` is the step where you could have walked away
+  playout: { head: string; steps: string[]; stop: number; stopText: string };
+  numbers: { figure: string; text: string; source: string }[]; // beat 4: sourced UK figures
+  challenge: string;                          // beat 5: heading over the spot-the-fake question
   photo: { src: ImageMetadata; alt: string; credit: string; licence: string; href: string };
   // How the lens frames the photo: focus point (0-1), extra zoom, and an optional deep-water tint
   // (multiplied in) for studio shots on pale backgrounds.
@@ -64,6 +69,21 @@ export const zones: Zone[] = [
         'Like the octopus, they pick the disguise you are least likely to question, then ask for something that person never would: money, a code, your password.',
       ],
     },
+    playout: {
+      head: 'How a safe-account scam plays out',
+      steps: [
+        'A text from "Northway Bank" lands in the same thread as your real bank texts. It says a £849 payment has been stopped and gives a number to call.',
+        'A calm "fraud team" answers. They know your name, your address and the last four digits of your card. Details like these are sold from old data leaks.',
+        'They say your account has been compromised, possibly by someone inside the bank, so you must not mention it to branch staff.',
+        'To protect your savings, you are asked to move them today to a new "safe account" in your name.',
+        'The money leaves in minutes and is split across accounts run by the criminals. The "fraud team" stops answering.',
+      ],
+      stop: 0,
+      stopText: 'A bank never asks you to ring a number sent by text. Use the one on the back of your card.',
+    },
+    numbers: [
+      { figure: 'Down 12%', text: 'Losses to impersonation scams fell 12% in 2025 and cases fell 11%, while purchase, investment and romance scams all grew.', source: 'ukf2026' },
+    ],
     challenge: 'Find the disguise',
     photo: {
       src: mimic,
@@ -73,7 +93,7 @@ export const zones: Zone[] = [
       href: 'https://commons.wikimedia.org/wiki/File:Mimic_octopus_(Thaumoctopus_mimicus)_(16059533407).jpg',
     },
     frame: { x: 0.5, y: 0.42, zoom: 1.0 },
-    sources: ['norman2001', 'noaaLayers'],
+    sources: ['norman2001', 'noaaLayers', 'ukf2026'],
   },
   {
     id: 'colony',
@@ -97,6 +117,22 @@ export const zones: Zone[] = [
         'A big crowd feels safe, so a fake one makes a bad shop look popular. Fake reviews have been illegal in the UK since April 2025, but they are still everywhere.',
       ],
     },
+    playout: {
+      head: 'How a fake shop plays out',
+      steps: [
+        'An advert offers walking boots at 60% off. The shop has a 4.9-star rating from more than 2,000 reviews.',
+        'The reviews were all posted within two weeks, and many repeat the same few phrases.',
+        'At checkout there is an extra 10% off if you pay by bank transfer instead of card.',
+        'An order confirmation arrives. The tracking number never updates.',
+        'A month later the website has gone. A card payment could be charged back; for a bank transfer you have to make a scam claim and hope.',
+      ],
+      stop: 2,
+      stopText: 'A shop that wants a bank transfer instead of a card is asking you to give up your protection.',
+    },
+    numbers: [
+      { figure: '71%', text: 'of all bank-transfer scam cases in the UK in 2025 were purchase scams: paying for something that never arrived.', source: 'ukf2026' },
+      { figure: '£118.1m', text: 'lost to purchase scams in 2025, up 20% on the year before.', source: 'ukf2026' },
+    ],
     challenge: 'Find the fake crowd',
     photo: {
       src: siphon,
@@ -106,13 +142,13 @@ export const zones: Zone[] = [
       href: 'https://commons.wikimedia.org/wiki/File:Praya_dubia_(Giant_siphonophore).jpg',
     },
     frame: { x: 0.56, y: 0.5, zoom: 1.0 },
-    sources: ['guinness', 'cmaReviews'],
+    sources: ['guinness', 'cmaReviews', 'ukf2026'],
   },
   {
     id: 'twilight',
     scam: 'lookalike',
     zone: 'Twilight zone',
-    depth: [200, 1000],
+    depth: [200, 600],
     ground: '#11302e',
     animal: 'The hatchetfish',
     latin: 'Sternoptychidae',
@@ -130,6 +166,22 @@ export const zones: Zone[] = [
         'parcelpost-redelivery.co is not parcelpost.co.uk. iarkspur.co.uk starts with an i, not an l. The part just before .co.uk or .com is the website you are really on.',
       ],
     },
+    playout: {
+      head: 'How a parcel text plays out',
+      steps: [
+        'A text says ParcelPost could not deliver your parcel. To rebook, pay £1.45 at parcelpost-redelivery.co.',
+        'The website is a perfect copy of the real one: logo, colours, tracking page.',
+        'You enter your card details. The payment "fails" and asks you to try again, so they get your details twice.',
+        'Days later, "your bank" calls about a suspicious £1.45 payment. They know about it because they took it.',
+        'From here it becomes a safe-account call, and your savings are the target.',
+      ],
+      stop: 0,
+      stopText: 'Read the address before you tap: the name right before .co is the website you are really on.',
+    },
+    numbers: [
+      { figure: '£423.5m', text: 'taken in 2025 using stolen card details online, across 3.2 million cases. Card details are what fake websites are built to collect.', source: 'ukf2026' },
+      { figure: '66%', text: 'of bank-transfer scam cases in 2025 started online.', source: 'ukf2026' },
+    ],
     challenge: 'Find the fake address',
     photo: {
       src: hatchet,
@@ -139,7 +191,56 @@ export const zones: Zone[] = [
       href: 'https://commons.wikimedia.org/wiki/File:ArgyropelecusAculeatus.jpg',
     },
     frame: { x: 0.4, y: 0.5, zoom: 1.0, tint: '#4c7466' },
-    sources: ['penn2017', 'duke2020', 'noaaLayers'],
+    sources: ['penn2017', 'duke2020', 'noaaLayers', 'ukf2026'],
+  },
+  {
+    id: 'voices',
+    scam: 'voice',
+    zone: 'Twilight zone, deeper',
+    depth: [600, 1000],
+    ground: '#0f2826',
+    animal: 'The beluga whale',
+    latin: 'Delphinapterus leucas',
+    trick: {
+      head: 'One learned to speak like us',
+      facts: [
+        'Belugas spend the summer in shallow Arctic coastal water, but they hunt deep. NOAA says they dive to 1,000 metres for up to 25 minutes, and one tagged male reached 956 metres.',
+        'In 1984, people at the US Navy\'s marine mammal programme in San Diego heard what sounded like people talking near the whale pens. Nobody was there. A diver surfaced asking who had told him to get out.',
+        'It was a beluga called NOC. Recordings showed he dropped his calls several octaves and copied the rhythm of human speech. He kept it up for about four years.',
+      ],
+    },
+    online: {
+      head: 'Scammers borrow a voice',
+      text: [
+        'A phone call feels more real than a text, so scammers make it sound right: your bank\'s real number on the screen, a calm "fraud team", or a voice cloned from a few seconds of someone\'s social media video.',
+        'Caller ID can be faked, so a familiar number proves nothing. The only safe check is to hang up and call back on a number you already have, ideally from a different phone.',
+      ],
+    },
+    playout: {
+      head: 'How a cloned-voice call plays out',
+      steps: [
+        'An unknown number rings. It is your son\'s voice, panicked: he has crashed the car and his phone is broken.',
+        'A "solicitor" takes over the call. To keep him out of a cell tonight, £2,000 is needed for the other driver.',
+        'You are told not to tell anyone yet, to spare him the embarrassment.',
+        'You send the money. Then you ring your son on his usual number, and he is at work, fine.',
+      ],
+      stop: 0,
+      stopText: 'Hang up and call him on the number you have saved. A family safe phrase settles it in seconds.',
+    },
+    numbers: [
+      { figure: '17%', text: 'of bank-transfer scam cases in 2025 started with a call or text, yet they made up 28% of all the money lost.', source: 'ukf2026' },
+      { figure: '28%', text: 'of UK adults in a 2024 survey of 3,000 people believed they had been targeted by an AI voice-cloning scam in the past year.', source: 'starling2024' },
+    ],
+    challenge: 'Find the borrowed voice',
+    photo: {
+      src: beluga,
+      alt: 'A white beluga whale in an aquarium, swimming face-on towards the camera through dim green water, its rounded forehead catching the light.',
+      credit: 'Versions111',
+      licence: 'CC BY 4.0',
+      href: 'https://commons.wikimedia.org/wiki/File:Beluga_Whale_02.jpg',
+    },
+    frame: { x: 0.42, y: 0.5, zoom: 1.0 },
+    sources: ['ridgway2012', 'noaaBeluga', 'physBeluga', 'ofcomSpoof', 'starling2024', 'ukf2026'],
   },
   {
     id: 'midnight',
@@ -164,6 +265,22 @@ export const zones: Zone[] = [
         'The scammer does not have to break in. They dangle the light, add a deadline, and wait for you to click.',
       ],
     },
+    playout: {
+      head: 'How an investment scam plays out',
+      steps: [
+        'An advert shows a famous TV presenter "revealing" the trading platform that made them rich.',
+        'You put in £250. A dashboard shows it growing every day, and a friendly "account manager" calls to check in.',
+        'You withdraw £100 and it arrives. The payout is there to win your trust.',
+        'You invest your savings. When you try to take it out, there is a "tax" or "release fee" to pay first.',
+        'You pay it, and another fee appears. The dashboard was never real.',
+      ],
+      stop: 0,
+      stopText: 'Celebrities are used in these adverts without their knowledge. Check any firm on the FCA register before you pay a penny.',
+    },
+    numbers: [
+      { figure: '£221.5m', text: 'lost to investment scams in 2025, the biggest share of all bank-transfer scam losses.', source: 'ukf2026' },
+      { figure: 'Up 40%', text: 'on the year before, from 14,893 cases.', source: 'ukf2026' },
+    ],
     challenge: 'Find the bait',
     photo: {
       src: angler,
@@ -173,7 +290,7 @@ export const zones: Zone[] = [
       href: 'https://commons.wikimedia.org/wiki/File:Hal_-_Melanocetus_johnsonii_-_4.jpg',
     },
     frame: { x: 0.66, y: 0.5, zoom: 1.0, tint: '#365a4f' },
-    sources: ['mbariAngler', 'noaaLight', 'noaaLayers'],
+    sources: ['mbariAngler', 'noaaLight', 'noaaLayers', 'ukf2026', 'fcaRegister'],
   },
 ];
 
@@ -195,5 +312,16 @@ export const sources: Record<string, { title: string; by: string; href: string }
   guinnessBird: { title: 'Deepest dive by a bird', by: 'Guinness World Records', href: 'https://www.guinnessworldrecords.com/world-records/deepest-dive-by-a-bird' },
   noaaSperm: { title: 'Sperm whale', by: 'NOAA Fisheries', href: 'https://www.fisheries.noaa.gov/species/sperm-whale' },
   noaaChallenger: { title: 'The depth of the Challenger Deep (2021 study)', by: 'NOAA', href: 'https://repository.library.noaa.gov/view/noaa/33477' },
+  ukf2026: { title: 'Annual Fraud Report 2026 (figures for 2025)', by: 'UK Finance', href: 'https://www.ukfinance.org.uk/news-and-insight/press-release/fraud-report-2026-press-release' },
+  ridgway2012: { title: 'Captive beluga whale imitated human voices (on Ridgway et al., Current Biology, 2012)', by: 'Scientific American', href: 'https://www.scientificamerican.com/article/captive-beluga-whale-imitated-human-voices/' },
+  noaaBeluga: { title: 'Beluga whale', by: 'NOAA Fisheries', href: 'https://www.fisheries.noaa.gov/species/beluga-whale' },
+  physBeluga: { title: 'Beluga whales dive to great depth to catch cod (2016)', by: 'Associated Press, via Phys.org', href: 'https://phys.org/news/2016-02-beluga-whales-great-depth-cod.html' },
+  ofcomSpoof: { title: 'Cracking down on scam calls from abroad', by: 'Ofcom', href: 'https://www.ofcom.org.uk/phones-and-broadband/scam-calls-and-messages/cracking-down-on-scam-calls-from-abroad' },
+  starling2024: { title: 'AI voice cloning scam warning issued by bank (2024)', by: 'ITV News, on Starling Bank research', href: 'https://www.itv.com/news/2024-09-17/ai-voice-cloning-scam-warning-issued-by-bank' },
+  fcaRegister: { title: 'The Financial Services Register', by: 'Financial Conduct Authority', href: 'https://register.fca.org.uk/' },
+  stopScams159: { title: 'Call 159', by: 'Stop Scams UK', href: 'https://stopscamsuk.org.uk/159' },
+  ofcom7726: { title: 'What to do about a scam call, text or message', by: 'Ofcom', href: 'https://www.ofcom.org.uk/phones-and-broadband/scam-calls-and-messages/what-to-do-about-a-scam-call-text-or-message' },
+  ncscReport: { title: 'Report a scam email', by: 'National Cyber Security Centre', href: 'https://www.ncsc.gov.uk/collection/phishing-scams/report-scam-email' },
+  reportFraud: { title: 'Report Fraud', by: 'City of London Police', href: 'https://www.reportfraud.police.uk/' },
   noaaTitanic: { title: 'Titanic bow', by: 'NOAA Ocean Exploration', href: 'https://oceanexplorer.noaa.gov/multimedia/daily-image-media-20210415/' },
 };

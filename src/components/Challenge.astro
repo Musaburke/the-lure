@@ -2,10 +2,10 @@
 // A spot-the-fake challenge. The first question is rendered here so it works without JS
 // (with the answer in a <details>); with JS, src/scripts/challenge.ts takes over and adds
 // "Try another". Cards are real interface fragments (data-ui), so they keep their own chrome.
-import type { Question } from '../data/questions';
+import { scams, type Question } from '../data/questions';
 interface Props { heading: string; scam: string; first: Question; total: number; practice?: boolean }
 const { heading, scam, first, total, practice = false } = Astro.props;
-const label = { text: 'Text message', email: 'Email', shop: 'Listing', link: 'Link', profile: 'Profile' } as const;
+import { LABEL as label } from '../scripts/challenge';
 const fake = first.cards.find((c) => c.fake);
 ---
 <div class="challenge" data-challenge data-scam={scam} data-first={first.id}>
@@ -20,13 +20,14 @@ const fake = first.cards.find((c) => c.fake);
       </button>
     ))}
   </div>
+  <p class="none-row" data-none hidden><button type="button" class="none-btn">None of these is fake</button></p>
   <div class="result" data-result aria-live="polite"></div>
   <p class="actions">
     <button type="button" class="btn" data-next hidden>{practice ? 'Next question' : 'Try another'}</button>
     {!practice && <span class="count" data-count>1 of {total}</span>}
   </p>
   <noscript>
-    <details class="answer"><summary class="link">Show the answer</summary><p>The fake is message {first.cards.indexOf(fake!) + 1}. {first.why}</p></details>
+    <details class="answer"><summary class="link">Show the answer</summary><p>The fake is message {first.cards.indexOf(fake!) + 1}. {scams[first.scam].type}, the trick of the {scams[first.scam].animal}: {scams[first.scam].about} {first.why}</p></details>
   </noscript>
 </div>
 
@@ -57,14 +58,55 @@ const fake = first.cards.find((c) => c.fake);
   .challenge :global(.c-meta) { color: var(--muted); font-size: var(--step-small); overflow-wrap: anywhere; }
   .challenge :global(.k-link .c-meta) { order: -1; flex-basis: 100%; color: var(--glow); font-size: 1rem; }
   .challenge :global(.c-subject) { color: var(--ink); }
+
+  /* Phone call: the caller large, the line it came in on beneath, then what they said. */
+  .challenge :global(.card.k-call) { border-radius: 22px; padding-block: 1.05rem 1.15rem; }
+  .challenge :global(.k-call .c-head) { flex-direction: column; gap: 0.1rem; }
+  .challenge :global(.k-call .c-from) { font-size: 1.25rem; letter-spacing: -0.006em; }
+  .challenge :global(.k-call .c-line) { color: var(--ink); }
+  /* Browser window: the address bar on top, then the window's title and contents. */
+  .challenge :global(.card.k-popup) { border-radius: 12px; padding-top: 0.6rem; }
+  .challenge :global(.k-popup .c-head) { display: contents; }
+  .challenge :global(.k-popup .c-meta) {
+    order: -1; justify-self: stretch; padding: 0.3rem 0.85rem; border-radius: 999px;
+    background: rgb(0 0 0 / 0.28); color: var(--text); font-size: var(--step-small);
+  }
+  .challenge :global(.k-popup .c-from) { margin-top: 0.4rem; }
+  /* QR code: the code, where it is stuck, and where it opens. */
+  .challenge :global(.card.k-qr) { grid-template-columns: 4.5rem 1fr; column-gap: 1rem; align-items: center; }
+  .challenge :global(.c-qr) { grid-row: 1 / span 3; width: 4.5rem; height: 4.5rem; padding: 0.3rem; border-radius: 6px; background: var(--ink); fill: var(--pill-ink); }
+  .challenge :global(.k-qr .c-head) { flex-direction: column; gap: 0.15rem; }
+  .challenge :global(.k-qr .c-meta) { order: 2; color: var(--glow); font-size: 1rem; }
+  /* Phone notification: compact, the app and the time on one line. */
+  .challenge :global(.card.k-notify) { border-radius: 22px; padding-block: 0.8rem 0.9rem; }
+  .challenge :global(.k-notify .c-head) { justify-content: space-between; }
+  /* Search result: the address, then the title as a link, then the snippet. */
+  .challenge :global(.card.k-search) { border-radius: 12px; }
+  .challenge :global(.k-search .c-head) { display: contents; }
+  .challenge :global(.k-search .c-meta) { order: -1; font-size: var(--step-small); color: var(--text); }
+  .challenge :global(.k-search .c-from) { font-size: 1.2rem; color: var(--ink); text-decoration: underline; text-underline-offset: 0.18em; text-decoration-thickness: 1px; text-decoration-color: rgb(255 255 255 / 0.4); }
   .challenge :global(.c-line) { color: var(--text); }
   .challenge :global(.card.is-real) { opacity: 0.55; }
   .challenge :global(.card.is-fake) { box-shadow: inset 0 0 0 2px var(--glow), 0 0 28px rgb(206 247 158 / 0.25); /* bioluminescent: the answer lights up */ }
   .challenge :global(mark.tell) { background: var(--glow); color: var(--pill-ink); border-radius: 4px; padding: 0 0.2em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 
+  .none-row { margin-top: 0.85rem; }
+  .none-row[hidden] { display: none; }
+  .none-btn {
+    width: 100%; min-height: 3.25rem; padding: 0.75rem 1.1rem; border: 0; border-radius: 999px; cursor: pointer;
+    background: var(--bubble); color: var(--ink); font-size: 1rem;
+    transition: background-color 200ms ease, transform 160ms var(--ease-out), opacity 300ms ease;
+  }
+  .none-btn:hover { background: var(--bubble-hover); }
+  .none-btn:active { transform: scale(0.985); }
+  .none-btn[aria-disabled='true'] { cursor: default; opacity: 0.55; transform: none; }
+  .none-btn.lit { opacity: 1; box-shadow: inset 0 0 0 2px var(--glow), 0 0 28px rgb(206 247 158 / 0.25); /* the answer lights up, like a fake card */ }
   .result { margin-top: 1.25rem; display: grid; gap: 0.5rem; max-width: 34rem; }
   .result:empty { display: none; }
   .result :global(.r-verdict) { font-size: var(--step-lead); color: var(--ink); line-height: 1.2; }
+  .result :global(.r-type) { display: grid; gap: 0.2rem; margin-block: 0.25rem; }
+  .result :global(.r-type-name) { font-size: var(--step-lead); line-height: 1.2; letter-spacing: -0.006em; color: var(--glow); }
+  .result :global(.r-type-about) { color: var(--text); }
   .challenge[data-state='right'] .result :global(.r-verdict)::before {
     content: ''; display: inline-block; width: 0.5em; height: 0.5em; margin-right: 0.5em; border-radius: 50%;
     background: var(--glow); box-shadow: 0 0 12px var(--glow); vertical-align: 0.12em;

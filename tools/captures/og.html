@@ -1,0 +1,27 @@
+<!doctype html>
+<!-- The link preview image (public/og.png, 1200x630). Render with: node tools/og.cjs -->
+<html lang="en-GB">
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: 'General Sans'; src: url('../../public/fonts/general-sans-400.woff2') format('woff2'); font-weight: 400; }
+  html, body { margin: 0; }
+  body { width: 1200px; height: 630px; overflow: hidden; background: #0b1716; color: #f3f8f4; font-family: 'General Sans', sans-serif; font-weight: 400; position: relative; }
+  .copy { position: absolute; left: 80px; top: 50%; transform: translateY(-50%); width: 560px; }
+  h1 { margin: 0; font-size: 150px; line-height: 0.92; letter-spacing: -0.035em; font-weight: 400; }
+  p { margin: 40px 0 0; font-size: 36px; line-height: 1.22; letter-spacing: -0.01em; color: #eef5f1; }
+  .port { position: absolute; right: 70px; top: 50%; width: 470px; height: 470px; transform: translateY(-50%); border-radius: 50%; overflow: hidden;
+    box-shadow: 0 0 0 3px rgb(206 247 158 / 0.75), 0 0 60px rgb(206 247 158 / 0.28); /* bioluminescent rim, as on the site's lens */ }
+  .port img { width: 100%; height: 100%; object-fit: cover; object-position: 66% 50%; }
+  /* The deep-water tint the lens gives this studio photo (zones.ts frame.tint), multiplied in. */
+  .port::after { content: ''; position: absolute; inset: 0; background: #365a4f; mix-blend-mode: multiply; }
+</style>
+</head>
+<body>
+  <div class="copy">
+    <h1>The Lure</h1>
+    <p>Deep-sea tricks,<br />and the scams that copy them.</p>
+  </div>
+  <div class="port"><img src="../../src/assets/zones/anglerfish.jpg" alt="" /></div>
+</body>
+</html>

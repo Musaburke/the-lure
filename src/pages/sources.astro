@@ -35,7 +35,7 @@ const photos = [
 
     <section aria-labelledby="h-questions">
       <h2 id="h-questions">The questions</h2>
-      <p>Every message, shop and link in the challenges is made up for practice, using the patterns real scams follow. The brands (Northway Bank, ParcelPost, HM Tax Office and the rest) are invented, and the phone numbers come from the ranges Ofcom keeps aside for fiction, so none of them is real.</p>
+      <p>Every message, call, shop and link in the challenges is made up for practice, using the patterns real scams follow. The hard-mode attacks (fake CAPTCHAs, QR code scams, invoice redirection, MFA fatigue, account takeover, fake login pop-ups, fake search ads, callback phishing, fake recruiters and SIM swaps) are all real techniques; the examples of them are invented. The brands (Northway Bank, ParcelPost, HM Tax Office and the rest) are invented, and the phone numbers come from the ranges Ofcom keeps aside for fiction, so none of them is real.</p>
     </section>
 
     <section aria-labelledby="h-gauge">
@@ -51,15 +51,17 @@ const photos = [
       <ul>
         {photos.map((p) => <li>{p.what}: <a class="link" href={p.href}>photo by {p.credit}</a>, {p.licence}</li>)}
       </ul>
-      <p class="note">Photos are seen through the glass lens, so they are cropped to a circle and gently distorted at the edge; two studio photos get a deep-water tint. Share-alike photos stay under their original licence.</p>
+      <p class="note">Photos are seen through the glass lens, so they are cropped to a circle and gently distorted at the edge; two studio photos get a deep-water tint, and the aquarium photo of the beluga is colour-graded to deep-water green. Share-alike photos stay under their original licence.</p>
     </section>
 
     <section aria-labelledby="h-help">
       <h2 id="h-help">Reporting scams in the UK</h2>
       <ul>
         <li><a class="link" href="https://www.reportfraud.police.uk/">Report Fraud</a> (which replaced Action Fraud in December 2025), or call 0300 123 2040. In Scotland, Police Scotland on 101.</li>
-        <li>Forward scam texts to 7726, free on most UK networks.</li>
-        <li>Forward scam emails to report@phishing.gov.uk.</li>
+        <li>Forward scam texts to 7726, free on most UK networks: <a class="link" href={sources.ofcom7726.href}>{sources.ofcom7726.title}</a>, Ofcom.</li>
+        <li>Forward scam emails to report@phishing.gov.uk: <a class="link" href={sources.ncscReport.href}>{sources.ncscReport.title}</a>, NCSC.</li>
+        <li>Call 159 to reach your bank's fraud team: <a class="link" href={sources.stopScams159.href}>{sources.stopScams159.title}</a>, Stop Scams UK.</li>
+        <li>Money paid back to scam victims in 2025: <a class="link" href={sources.ukf2026.href}>{sources.ukf2026.title}</a>, UK Finance.</li>
       </ul>
     </section>
 
@@ -78,6 +80,6 @@ const photos = [
   .group { display: grid; gap: 0.4rem; }
   ul { padding-left: 1.25rem; display: grid; gap: 0.5rem; }
   li::marker { color: var(--glow); }
-  .note { color: var(--muted); font-size: var(--step-small); }
+  .note { color: var(--muted); font-size: var(--step-small); max-width: 36rem; }
   .back { margin-top: 4rem; }
 </style>

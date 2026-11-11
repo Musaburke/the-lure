@@ -3,13 +3,24 @@ import { Image, getImage } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import Challenge from '../components/Challenge.astro';
 import Gauge from '../components/Gauge.astro';
-import { zones, surface, abyss } from '../data/zones';
+import { zones, surface, abyss, sources } from '../data/zones';
 import { byScam } from '../data/questions';
 
 // Photos the lens can show, in order: the surface first, then one per animal. The abyss has none.
 // 2,048 px textures so the glass stays sharp on high-density screens.
 const lensPhotos = await Promise.all([surface.photo.src, ...zones.map((z) => z.photo.src)].map(async (src) => (await getImage({ src, width: Math.min(3072, src.width), format: 'webp', quality: 95 })).src));
-const sides = ['right', 'left', 'right', 'left'];
+const sides = zones.map((_, i) => (i % 2 ? 'left' : 'right'));
+
+// What to do after a scam, most urgent first. Each step names who to contact; sources are linked.
+const link = (k: string, text: string) => `<a class="link" href="${sources[k].href}">${text}</a>`;
+const afterSteps = [
+  ['Call your bank now.', `Dial ${link('stopScams159', '159')} from any phone to reach the fraud team at most UK banks, or use the number on your card. The sooner they know, the more they can stop.`],
+  ['Change any password you typed in.', 'Start with your email, then anywhere you used the same password.'],
+  ['Report it.', `To ${link('reportFraud', 'Report Fraud')}, online or on 0300 123 2040. In Scotland, call Police Scotland on 101.`],
+  ['Pass on the evidence.', `Forward scam texts to 7726 (${link('ofcom7726', 'Ofcom explains how')}) and scam emails to report@phishing.gov.uk (${link('ncscReport', 'NCSC')}). Keep screenshots.`],
+  ['Ask for your money back.', `In 2025 banks paid back £354.3 million to victims of bank-transfer scams, 61% of what was lost (${link('ukf2026', 'UK Finance')}). Ask your bank how to claim.`],
+  ['Ignore anyone offering to recover it for a fee.', 'Recovery offers are a known follow-up scam, sometimes run by the people who took the money.'],
+];
 
 const checklist = [
   ['Stop.', 'A real bank, tax office or delivery company can wait five minutes. Pressure to act now is the hook.'],
@@ -53,6 +64,24 @@ const checklist = [
             <h3>{z.online.head}</h3>
             {z.online.text.map((t) => <p>{t}</p>)}
           </div>
+          <div class="beat" data-reveal>
+            <h3>{z.playout.head}</h3>
+            <ol class="play">
+              {z.playout.steps.map((t, k) => <li class:list={{ stop: k === z.playout.stop }}>{t}</li>)}
+            </ol>
+            <p class="stop-note"><span class="stop-head">The moment to stop</span> {z.playout.stopText}</p>
+          </div>
+          <div class="beat" data-reveal>
+            <h3>In the UK in 2025</h3>
+            <div class:list={['nums', { two: z.numbers.length > 1 }]}>
+              {z.numbers.map((n) => (
+                <div class="num">
+                  <p class="fig">{n.figure}</p>
+                  <p>{n.text} <a class="src" href={sources[n.source].href}>{sources[n.source].by}</a></p>
+                </div>
+              ))}
+            </div>
+          </div>
           <Challenge heading={z.challenge} scam={z.scam} first={byScam(z.scam)[0]} total={byScam(z.scam).length} />
         </div>
       </section>
@@ -78,6 +107,14 @@ const checklist = [
         </div>
 
         <div class="block" data-reveal>
+          <h3 id="h-scammed">If you have been scammed</h3>
+          <p>Move fast. These scams are designed to fool careful people, so there is nothing to be embarrassed about.</p>
+          <ol class="steps">
+            {afterSteps.map(([a, b]) => <li><strong>{a}</strong> <Fragment set:html={b} /></li>)}
+          </ol>
+        </div>
+
+        <div class="block" data-reveal>
           <h3 id="h-check">Check a link</h3>
           <p>Paste a link from a message you are not sure about. It is checked right here on your device. Nothing is opened or sent anywhere.</p>
           <form class="lc" data-linkcheck aria-labelledby="h-check" novalidate>
@@ -89,16 +126,18 @@ const checklist = [
           <noscript><p class="lc-note">The checker needs JavaScript. Without it, look at the part of the address just before .co.uk or .com: that is the real website.</p></noscript>
         </div>
 
-        <div class="block" data-reveal>
-          <h3>If you have already clicked</h3>
-          <p>Call your bank straight away on the number on your card. Report it to <a class="link" href="https://www.reportfraud.police.uk/">Report Fraud</a> or on 0300 123 2040 (in Scotland, call Police Scotland on 101). Forward scam texts to 7726 and scam emails to report@phishing.gov.uk.</p>
-        </div>
 
         <div class="block" data-reveal>
           <h3>Send this to someone</h3>
           <p>The people most likely to take the bait are often the ones least likely to read about it.</p>
           <p class="share-row"><button class="btn" type="button" data-share>Share The Lure</button> <a class="link" href={`#${zones[0].id}`}>Dive again</a></p>
           <p class="share-note" data-share-note aria-live="polite"></p>
+        </div>
+
+        <div class="block more" data-reveal>
+          <h3>Keep practising</h3>
+          <p>60 questions from the dive, and 20 harder ones on real attacks: fake CAPTCHAs, QR code stickers, SIM swaps and more. Every right answer takes you 100 metres deeper.</p>
+          <p class="more-row"><a class="btn" href="/practice">Start a practice dive</a></p>
         </div>
       </div>
     </section>
@@ -144,6 +183,21 @@ const checklist = [
     content: ''; display: inline-block; width: 0.45em; height: 0.45em; margin-right: 0.5em; border-radius: 50%;
     background: var(--glow); vertical-align: 0.15em;
   }
+  /* How it plays out: the moment to stop is lit, like the living light it is. */
+  .play { padding-left: 1.4rem; display: grid; gap: 0.75rem; }
+  .play li { padding-left: 0.35rem; }
+  .play li::marker { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .play li.stop { color: var(--ink); }
+  .play li.stop::marker { color: var(--glow); }
+  .stop-note { display: grid; gap: 0.2rem; color: var(--ink); }
+  .stop-head { color: var(--glow); }
+  /* The numbers: the figure large, what it means beneath, the source right after. */
+  .nums { display: grid; gap: 1.75rem; }
+  .nums.two { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+  .num { display: grid; gap: 0.4rem; align-content: start; }
+  .fig { font-size: clamp(2.5rem, 1.6rem + 2.6vw, 3.75rem); line-height: 1; letter-spacing: -0.025em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .src { color: var(--muted); font-size: var(--step-small); text-decoration: underline; text-underline-offset: 0.2em; text-decoration-color: rgb(255 255 255 / 0.3); white-space: nowrap; transition: color 200ms ease, text-decoration-color 200ms ease; }
+  .src:hover { color: var(--ink); text-decoration-color: var(--glow); }
   .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.75rem; }
   .practice-row { margin-top: 0.5rem; }
   .lead { font-size: var(--step-lead); line-height: 1.3; letter-spacing: -0.006em; color: var(--ink); }
@@ -186,6 +240,7 @@ const checklist = [
   .lc-out :global(ul) { padding-left: 1.25rem; display: grid; gap: 0.5rem; }
   .lc-out :global(.lc-note), .lc-note { color: var(--muted); font-size: var(--step-small); }
   .share-row { display: flex; flex-wrap: wrap; align-items: center; gap: 1.5rem; margin-top: 0.5rem; }
+  .more-row { margin-top: 0.5rem; }
   .share-note { min-height: 1.5em; color: var(--muted); font-size: var(--step-small); }
 
   .foot { padding: 3rem var(--margin) 2.5rem calc(var(--margin) + var(--gauge)); font-size: var(--step-small); color: var(--muted); background: var(--abyss); }
@@ -195,6 +250,8 @@ const checklist = [
      keeps to its own half. */
   @media (min-width: 900px) {
     .stage { padding-right: calc(var(--margin) + 3rem); }
+    /* Room between zones for the lens to swoop across at a good size. */
+    :global(.js) .zone { padding-top: max(var(--section), 45svh); }
     .col, .hero .col, .end .col { max-width: min(36rem, calc(50% - 2rem)); }
     /* The depth ruler runs down the right edge of the page, in the page itself, so it scrolls for free. */
     :global(.js) .ruler { display: block; position: absolute; z-index: 1; top: 0; right: 0.9rem; width: 2.5rem; pointer-events: none; }
@@ -204,7 +261,10 @@ const checklist = [
       content: attr(data-label); position: absolute; right: 1.3rem; top: -0.55rem; white-space: nowrap;
       font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums;
     }
-    .ruler :global(.mark) { position: absolute; right: -0.15rem; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 10px var(--glow); }
+    .ruler :global(.mark) { position: absolute; right: -0.15rem; width: 8px; height: 8px; margin-top: -4px; }
+    .ruler :global(.mark)::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--glow); box-shadow: 0 0 10px var(--glow); }
+    .ruler :global(.mark-label) { position: absolute; right: 1.3rem; top: -0.4rem; white-space: nowrap; font-size: 0.75rem; line-height: 1.2; color: var(--text); }
+    .ruler :global(.mark-m) { color: var(--muted); font-variant-numeric: tabular-nums; }
     :global(.js) .lens {
       --m: clamp(1rem, 4vw, 3.5rem);
       display: block; position: fixed; z-index: 1; left: 0; top: 50%;

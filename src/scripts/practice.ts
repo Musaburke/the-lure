@@ -5,8 +5,9 @@ import { mountChallenge } from './challenge';
 import { mountGlass } from './glass';
 import { mountWater } from './water';
 import { mountSound } from './sound';
-import { questions, scams } from '../data/questions';
+import { questions, hard, scams, type Scam } from '../data/questions';
 import { landmarks } from '../data/landmarks';
+import { markNode } from './ruler';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const root = document.documentElement;
@@ -40,12 +41,12 @@ const lensCanvas = $<HTMLCanvasElement>('[data-lens]');
 const lens = lensCanvas ? mountGlass(lensCanvas, JSON.parse(lensCanvas.dataset.photos ?? '[]'), JSON.parse(lensCanvas.dataset.frames ?? '[]'), reduced) : null;
 const soundBtn = $<HTMLButtonElement>('[data-sound]');
 const sound = soundBtn ? mountSound(soundBtn) : null;
-const lensIndex: Record<string, number> = { disguise: 0, crowd: 1, lookalike: 2, bait: 3 };
+const lensIndex = Object.fromEntries(Object.keys(scams).map((k, i) => [k, i])) as Record<Scam, number>;
 
 const out = {
   depth: $<HTMLElement>('[data-h="depth"]'), right: $<HTMLElement>('[data-h="right"]'),
   streak: $<HTMLElement>('[data-h="streak"]'), best: $<HTMLElement>('[data-h="best"]'),
-  mark: $<HTMLElement>('[data-mark]'), animal: $<HTMLElement>('[data-animal]'), strip: $<HTMLElement>('[data-strip]'),
+  mark: $<HTMLElement>('[data-mark]'), strip: $<HTMLElement>('[data-strip]'),
 };
 
 // The ruler: a tall strip of ticks that slides up as you sink.
@@ -56,15 +57,11 @@ if (out.strip) {
     const major = m % 1000 === 0;
     t.className = major ? 'tick major' : 'tick';
     t.style.top = `${m * PX_PER_M}px`;
-    if (major) t.dataset.label = `${m.toLocaleString('en-GB')} m`;
+    // A landmark's own label already gives its depth, so skip a depth label that would sit on it.
+    if (major && !landmarks.some((l) => Math.abs(l.m - m) * PX_PER_M < 22)) t.dataset.label = `${m.toLocaleString('en-GB')} m`;
     out.strip.append(t);
   }
-  for (const l of landmarks) {
-    const d = document.createElement('span');
-    d.className = 'mark';
-    d.style.top = `${l.m * PX_PER_M}px`;
-    out.strip.append(d);
-  }
+  for (const l of landmarks) out.strip.append(markNode(l, l.m * PX_PER_M));
 }
 
 function paint(prev: number) {
@@ -87,14 +84,34 @@ function paint(prev: number) {
 }
 
 const box = $<HTMLElement>('[data-challenge]');
+// Level and scam filter. Hard mode draws on the real-world attacks; the choice is remembered in
+// this browser only.
+const setup = $<HTMLFormElement>('[data-setup]');
+const note = $<HTMLElement>('[data-setup-note]');
+const LEVEL = 'the-lure.level';
+const read = () => { try { return localStorage.getItem(LEVEL); } catch { return null; } };
+// The address carries the choice too (?level=hard&scam=voice), so a link opens the same set.
+const query = new URLSearchParams(location.search);
+const field = (n: string) => setup?.elements.namedItem(n) as RadioNodeList | null;
+const level0 = query.get('level') ?? read();
+if (level0 === 'hard' || level0 === 'normal') { const f = field('level'); if (f) f.value = level0; }
+const scam0 = query.get('scam');
+if (scam0 && scam0 in scams) { const f = field('scam'); if (f) f.value = scam0; }
+function pool() {
+  const level = setup ? (setup.elements.namedItem('level') as RadioNodeList).value : 'normal';
+  const scam = setup ? (setup.elements.namedItem('scam') as RadioNodeList).value : 'all';
+  const set = (level === 'hard' ? hard : questions).filter((q) => scam === 'all' || q.scam === scam);
+  if (note) note.textContent = level === 'hard'
+    ? `${set.length} questions on named attacks, four cards each. Some have no fake at all.`
+    : '';
+  return set;
+}
+
 if (box) {
-  mountChallenge(box, questions, {
+  const game = mountChallenge(box, pool(), {
     shuffle: true,
-    // Keep the lens and the caption on the animal that matches the current question.
-    onShow: (q) => {
-      lens?.show(lensIndex[q.scam]);
-      if (out.animal) out.animal.textContent = `This one is about ${scams[q.scam].name.toLowerCase()}, the trick of the ${scams[q.scam].animal}.`;
-    },
+    // Keep the lens on the animal that matches the current question.
+    onShow: (q) => lens?.show(lensIndex[q.scam]),
     onAnswer: ({ correct }) => {
       const prev = depth;
       if (correct) {
@@ -109,6 +126,15 @@ if (box) {
       }
       paint(prev);
     },
+  });
+  setup?.addEventListener('change', () => {
+    const level = field('level')?.value ?? 'normal', scam = field('scam')?.value ?? 'all';
+    try { localStorage.setItem(LEVEL, level); } catch { /* private mode */ }
+    const q = new URLSearchParams();
+    if (level !== 'normal') q.set('level', level);
+    if (scam !== 'all') q.set('scam', scam);
+    history.replaceState(null, '', q.size ? `?${q}` : location.pathname);
+    game.setPool(pool());
   });
 }
 

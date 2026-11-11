@@ -1,19 +1,16 @@
-// The living water behind the page: sunlight shafts near the surface, creature silhouettes that
-// drift past at the depths they really live, glowing plankton that lights up near the pointer,
-// bubbles, and huge out-of-focus glowing forms (the bioluminescent lab look) that grow brighter
+// The living water behind the page: sunlight shafts near the surface, the glowing lures of
+// anglerfish in the deep, glowing plankton that lights up near the pointer, bubbles near the
+// surface, and huge out-of-focus glowing forms (the bioluminescent lab look) that grow brighter
 // as the light goes. One canvas, one loop. Glow comes from a pre-drawn sprite (no shadowBlur), the pixel
 // ratio is capped, and everything pauses when the tab is hidden. Reduced motion: still frames.
 
 const GLOW = '206, 247, 158';
 
 type Speck = { x: number; y: number; r: number; base: number; vy: number; ph: number; lit: number };
-type Creature = { kind: 'fish' | 'jelly' | 'whale' | 'lantern' | 'lure'; d: number; x: number; v: number; s: number; ph: number; a: number };
+type Lure = { d: number; x: number; v: number; ph: number };
 type Bubble = { x: number; y: number; r: number; vy: number; life: number };
 type Form = { x: number; y: number; s: number; sx: number; rot: number; spin: number; ph: number; ring: boolean };
 
-const FISH = new Path2D('M-50 0 C-30 -15 15 -16 32 -3 L50 -14 L46 0 L50 14 L32 3 C15 16 -30 15 -50 0 Z');
-const WHALE = new Path2D('M-100 -14 C-60 -24 20 -22 54 -14 C70 -10 78 -2 80 6 C70 16 30 20 -20 18 C-50 17 -80 12 -100 6 L-128 -10 L-122 4 L-132 18 L-104 10 Z');
-const BELL = new Path2D('M-22 0 C-22 -30 22 -30 22 0 Q11 5 0 0 Q-11 5 -22 0 Z');
 
 export function mountWater(canvas: HTMLCanvasElement, reduced: boolean) {
   const ctx = canvas.getContext('2d')!;
@@ -59,16 +56,11 @@ export function mountWater(canvas: HTMLCanvasElement, reduced: boolean) {
     { x: 0.08, y: 0.18, s: 0.6, sx: 2.2, rot: 1.1, spin: -0.006, ph: 3, ring: true },
   ];
 
-  // Creatures live at fixed depths; you sink past them.
-  const creatures: Creature[] = [];
-  const add = (kind: Creature['kind'], d: number, s: number, a: number) =>
-    creatures.push({ kind, d, x: Math.random(), v: (0.012 + Math.random() * 0.02) * (Math.random() < 0.5 ? -1 : 1), s, ph: Math.random() * 6.28, a });
-  for (let k = 0; k < 9; k++) add('fish', 18 + Math.random() * 40, 0.35 + Math.random() * 0.2, 0.32);
-  for (let k = 0; k < 6; k++) add('fish', 90 + Math.random() * 60, 0.3 + Math.random() * 0.2, 0.26);
-  add('jelly', 140, 1, 0.3); add('jelly', 420, 0.8, 0.3); add('jelly', 760, 1.2, 0.28);
-  add('whale', 520, 1.6, 0.34); add('whale', 900, 1.3, 0.3);
-  for (let k = 0; k < 8; k++) add('lantern', 300 + Math.random() * 900, 0.4 + Math.random() * 0.3, 1);
-  for (let k = 0; k < 4; k++) add('lure', 1300 + Math.random() * 2500, 1, 1);
+  // Anglerfish lures live at fixed depths in the midnight zone; you sink past them. The only
+  // animals drawn are lights: the real animals are the photos in the lens.
+  const lures: Lure[] = Array.from({ length: 5 }, () => ({
+    d: 1300 + Math.random() * 2500, x: Math.random(), v: (0.008 + Math.random() * 0.012) * (Math.random() < 0.5 ? -1 : 1), ph: Math.random() * 6.28,
+  }));
 
   function seed() {
     dpr = Math.min(window.devicePixelRatio || 1, 1.5);
@@ -139,55 +131,21 @@ export function mountWater(canvas: HTMLCanvasElement, reduced: boolean) {
       }
     }
 
-    // Creatures.
+    // Anglerfish lures: one light each, bobbing, slowly pulsing.
     const mPerPx = span(depth) / h;
-    for (const c of creatures) {
+    ctx.globalCompositeOperation = 'lighter';
+    for (const c of lures) {
       const y = h * 0.5 + (c.d - depth) / mPerPx;
-      if (y < -200 || y > h + 200) continue;
+      if (y < -100 || y > h + 100) continue;
       if (!reduced) c.x += c.v * 0.016;
-      if (c.x > 1.2) c.x = -0.2;
-      if (c.x < -0.2) c.x = 1.2;
-      const x = c.x * w;
+      if (c.x > 1.1) c.x = -0.1;
+      if (c.x < -0.1) c.x = 1.1;
       const bob = reduced ? 0 : Math.sin(t * 0.8 + c.ph) * 6;
-      ctx.save();
-      ctx.translate(x, y + bob);
-      if (c.kind === 'fish' || c.kind === 'whale') {
-        ctx.scale(c.s * (c.v < 0 ? -1 : 1), c.s);
-        ctx.fillStyle = `rgba(2, 14, 22, ${c.a * (1 - dark * 0.6)})`;
-        ctx.fill(c.kind === 'fish' ? FISH : WHALE);
-      } else if (c.kind === 'jelly') {
-        ctx.scale(c.s, c.s);
-        const pulse = reduced ? 1 : 1 + Math.sin(t * 1.6 + c.ph) * 0.06;
-        ctx.scale(pulse, 2 - pulse);
-        ctx.fillStyle = `rgba(190, 235, 255, ${0.08 + 0.1 * dark})`;
-        ctx.fill(BELL);
-        ctx.strokeStyle = `rgba(190, 235, 255, ${0.07 + 0.08 * dark})`;
-        ctx.lineWidth = 1.2;
-        for (let k = -2; k <= 2; k++) {
-          ctx.beginPath();
-          ctx.moveTo(k * 7, 2);
-          ctx.bezierCurveTo(k * 7 + 6 * Math.sin(t + k), 20, k * 7 - 6 * Math.sin(t + k), 40, k * 7, 58);
-          ctx.stroke();
-        }
-      } else if (c.kind === 'lantern') {
-        // Lanternfish: a faint body and a row of glowing photophores.
-        ctx.scale(c.s * (c.v < 0 ? -1 : 1), c.s);
-        ctx.fillStyle = `rgba(4, 20, 28, ${0.35 * dark})`;
-        ctx.fill(FISH);
-        ctx.globalCompositeOperation = 'lighter';
-        for (let k = 0; k < 5; k++) ctx.drawImage(sprite, -34 + k * 13 - 6, 6, 12, 12);
-        ctx.globalCompositeOperation = 'source-over';
-      } else {
-        // An anglerfish lure: one light, bobbing, slowly pulsing.
-        const p = reduced ? 0.8 : 0.6 + 0.4 * Math.sin(t * 1.3 + c.ph);
-        ctx.globalCompositeOperation = 'lighter';
-        ctx.globalAlpha = p * dark;
-        ctx.drawImage(sprite, -18, -18, 36, 36);
-        ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = 'source-over';
-      }
-      ctx.restore();
+      ctx.globalAlpha = (reduced ? 0.8 : 0.6 + 0.4 * Math.sin(t * 1.3 + c.ph)) * dark;
+      ctx.drawImage(sprite, c.x * w - 18, y + bob - 18, 36, 36);
     }
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
 
     // Plankton.
     ctx.globalCompositeOperation = 'lighter';
@@ -211,7 +169,8 @@ export function mountWater(canvas: HTMLCanvasElement, reduced: boolean) {
     ctx.globalCompositeOperation = 'source-over';
 
     // Bubbles.
-    if (!reduced && Math.abs(dy) > 40 && bubbles.length < 60) for (let k = 0; k < 2; k++) burst(Math.random() * w, h + 10, 1);
+    // Bubbles rise only near the surface, where the diver's own air still reaches.
+    if (!reduced && sun > 0.2 && Math.abs(dy) > 40 && bubbles.length < 60) for (let k = 0; k < 2; k++) burst(Math.random() * w, h + 10, 1);
     for (let k = bubbles.length - 1; k >= 0; k--) {
       const b = bubbles[k];
       b.y -= b.vy;

@@ -10,7 +10,9 @@ export function mountLinkChecker(form: HTMLFormElement, out: HTMLElement) {
     out.dataset.verdict = res.ok ? res.verdict : 'error';
     const p = (text: string, cls?: string) => { const el = document.createElement('p'); el.textContent = text; if (cls) el.className = cls; out.append(el); return el; };
     if (!res.ok) { p(res.error, 'lc-verdict'); return; }
-    p({ clear: 'No obvious warning signs.', careful: 'Be careful with this one.', danger: "Don't open this link." }[res.verdict], 'lc-verdict');
+    p(res.verdict === 'clear' && res.known
+      ? `This is ${res.known}'s real address.`
+      : { clear: 'No warning signs found.', careful: 'Be careful with this one.', danger: "Don't open this link." }[res.verdict], 'lc-verdict');
     const where = document.createElement('p');
     where.className = 'lc-where';
     const b = document.createElement('strong');
@@ -23,7 +25,9 @@ export function mountLinkChecker(form: HTMLFormElement, out: HTMLElement) {
       out.append(ul);
     }
     p(res.verdict === 'clear'
-      ? "A clean address doesn't prove a site is safe. If a message sent you here, go to the company's website yourself instead."
+      ? res.known
+        ? "Even so, if a message sent you this link, go to the website or app yourself rather than tapping it."
+        : "This checker spots known tricks; it can't promise a website is safe. If a message sent you here, go to the company's website yourself instead."
       : "If a message sent you this, delete it. To check, go to the company's website or app yourself.", 'lc-note');
   });
 }

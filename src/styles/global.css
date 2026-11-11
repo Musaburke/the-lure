@@ -15,7 +15,7 @@
   /* Ink: display type brightest, running text a touch softer and tinted by the water. */
   --ink: #ffffff;
   --text: #eef5f1;
-  --muted: #bfd3cc;
+  --muted: #d0e0da; /* 4.8:1 on a card in the sunlit shallows, the palest ground it sits on */
 
   /* The one accent: bioluminescent lime, as in a lab at midnight. Living light, the gauge, progress
      and feedback only. The deep water carries the same green note (zones.ts grounds). */
@@ -49,6 +49,10 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 * { margin: 0; }
+/* No single word stranded on a paragraph's last line. */
+p, li, dd { text-wrap: pretty; }
+h1, h2, h3 { text-wrap: balance; }
+a, button, label, input { touch-action: manipulation; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 body {

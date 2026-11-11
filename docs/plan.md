@@ -85,3 +85,15 @@ Inspired by Krillion (krillion.io): you earn depth by answering, a ruler of real
 - Lag fixed: layout measured once, no reflow in the scroll handler, plankton glow from a sprite. Measured 60 fps at 4× CPU slowdown.
 - Full-resolution photos (2,700 to 3,100 px originals), lens textures at 2,048 px; a 3,000 px CC0 sunlit-water photo for the surface.
 - Sound about 9% of its old level, fading in, with a soft chime on right answers.
+
+## Round 4 (11 Nov 2026): grown-up, deeper, harder
+Musa: the site feels childish, small and too easy; it must impress an employer, not look like slop. Decided in a grill:
+- Tone: same everyday reader, written like a quality news interactive (BBC, NYT), not a quiz.
+- Visuals: no cartoon creature silhouettes in the water. Keep the out-of-focus forms, marine snow and light shafts; bubbles near the surface only. The only animals on screen are the real photos.
+- Depth: every zone adds "How it plays out" (one realistic scam, step by step, with the moment to stop) and "The real numbers" (one or two sourced UK figures: UK Finance, Ofcom, Report Fraud).
+- New zone: the beluga whale (NOC, the Navy beluga that copied human speech), 200–1,000 m band shared with the twilight zone; teaches voice and phone impersonation (bank calls, number spoofing, AI voice clones). Ten normal questions, new `call` card style.
+- Story checks: 3 cards. Practice: Normal / Hard switch and a filter by scam type.
+- Hard mode: 4 cards, subtle giveaways, and some questions where every card is real ("None of these is fake"). Ten named real-world attacks, two questions each: ClickFix fake CAPTCHA, quishing, invoice redirection, MFA fatigue, WhatsApp takeover, browser-in-the-browser, malvertising, callback phishing, fake recruiter, SIM swap. The result names the attack. New unbranded card styles: browser pop-up, QR sticker, phone notification, search result.
+- End: "If you've been scammed" section with sourced UK steps, before the link checker.
+- Link preview image (`og:image`).
+- Not shipping yet.

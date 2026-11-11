@@ -3,10 +3,10 @@ import { getImage } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import Challenge from '../components/Challenge.astro';
 import { zones } from '../data/zones';
-import { questions } from '../data/questions';
+import { questions, scams, type Scam } from '../data/questions';
 
-// The lens shows the animal behind each question's trick, in scam order: disguise, crowd, look-alike, bait.
-const order = ['disguise', 'crowd', 'lookalike', 'bait'];
+// The lens shows the animal behind each question's trick, in dive order.
+const order = Object.keys(scams) as Scam[];
 const byScam = order.map((s) => zones.find((z) => z.scam === s)!);
 const photos = await Promise.all(byScam.map(async (z) => (await getImage({ src: z.photo.src, width: Math.min(3072, z.photo.src.width), format: 'webp', quality: 95 })).src));
 ---
@@ -22,6 +22,24 @@ const photos = await Promise.all(byScam.map(async (z) => (await getImage({ src: 
         <p class="lead">Spot the fake. Every right answer takes you 100 metres deeper. No timer, no limit.</p>
       </header>
 
+      <form class="setup" data-setup data-reveal aria-label="Choose your questions">
+        <fieldset>
+          <legend>Level</legend>
+          <div class="seg">
+            <label><input type="radio" name="level" value="normal" checked /><span>Normal</span></label>
+            <label><input type="radio" name="level" value="hard" /><span>Hard: real-world attacks</span></label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Scams</legend>
+          <div class="seg wrap">
+            <label><input type="radio" name="scam" value="all" checked /><span>All</span></label>
+            {order.map((k) => <label><input type="radio" name="scam" value={k} /><span>{scams[k].name}</span></label>)}
+          </div>
+        </fieldset>
+        <p class="setup-note" data-setup-note aria-live="polite"></p>
+      </form>
+
       <section class="hud" aria-label="Your dive" data-reveal>
         <dl>
           <div><dt>Depth</dt><dd data-h="depth">0 m</dd></div>
@@ -35,7 +53,6 @@ const photos = await Promise.all(byScam.map(async (z) => (await getImage({ src: 
       <section aria-labelledby="h-q">
         <h2 id="h-q" class="visually-hidden">Question</h2>
         <Challenge heading="" scam="all" first={questions[0]} total={questions.length} practice />
-        <p class="animal" data-animal></p>
       </section>
 
       <p class="foot-row">
@@ -67,7 +84,25 @@ const photos = await Promise.all(byScam.map(async (z) => (await getImage({ src: 
   .mark { margin-top: 0.75rem; min-height: 1.5em; color: var(--glow); font-size: var(--step-small); }
   :global(.js) .mark.pop { animation: mark-in 800ms var(--ease-out); }
   @keyframes mark-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-  .animal { margin-top: 1rem; color: var(--text); min-height: 1.5em; }
+  .setup { display: none; }
+  :global(.js) .setup { display: grid; gap: 1.25rem; margin-top: 2.5rem; }
+  .setup fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 0.6rem; }
+  .setup legend { padding: 0; margin-bottom: 0.6rem; color: var(--muted); font-size: var(--step-small); }
+  .seg { display: flex; gap: 0.5rem; }
+  .seg.wrap { flex-wrap: wrap; }
+  .seg label { position: relative; }
+  .seg input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .seg span {
+    display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0 1rem; border-radius: 999px;
+    background: var(--bubble); color: var(--ink); font-size: var(--step-small); white-space: nowrap;
+    transition: background-color 200ms ease, color 200ms ease, transform 160ms var(--ease-out);
+  }
+  .seg label:hover span { background: var(--bubble-hover); }
+  .seg label:active span { transform: scale(0.97); }
+  .seg input:checked + span { background: var(--pill); color: var(--pill-ink); }
+  .seg input:focus-visible + span { outline: 2px solid var(--glow); outline-offset: 3px; }
+  .setup-note { color: var(--text); min-height: 1.5em; }
+  .setup-note:empty { display: none; }
   .foot-row { margin-top: 3rem; display: flex; flex-wrap: wrap; gap: 1rem 2rem; align-items: center; }
   .link-btn {
     background: none; border: 0; padding: 0; cursor: pointer; color: var(--ink);
@@ -83,19 +118,22 @@ const photos = await Promise.all(byScam.map(async (z) => (await getImage({ src: 
     .col { max-width: min(38rem, calc(50% - 2rem)); }
     :global(.js) .lens {
       --m: clamp(1rem, 4vw, 3.5rem);
-      display: block; position: fixed; z-index: 1; top: 50%; right: calc(var(--margin) + 4rem);
-      width: min(36vw, 520px, 64vh); aspect-ratio: 1; height: auto;
+      display: block; position: fixed; z-index: 1; top: 50%; right: calc(var(--margin) + 9rem);
+      width: min(36vw, 520px, 64vh, calc(50vw - var(--margin) - 11rem)); aspect-ratio: 1; height: auto;
       transform: translate3d(var(--lx, 0px), calc(-50% + var(--ly, 0px)), 0);
       pointer-events: none;
     }
-    :global(.js) .pruler { display: block; position: fixed; z-index: 1; top: 0; right: 0.9rem; width: 6rem; height: 100vh; overflow: hidden; pointer-events: none; }
+    :global(.js) .pruler { display: block; position: fixed; z-index: 1; top: 0; right: 0.9rem; width: 11rem; height: 100vh; overflow: hidden; pointer-events: none; }
     .strip { position: absolute; inset: 0 0 auto 0; transition: transform 1200ms var(--ease-out); }
     .strip :global(.tick) { position: absolute; right: 0; width: 0.5rem; height: 1px; background: rgb(255 255 255 / 0.22); }
     .strip :global(.tick.major) { width: 0.9rem; background: rgb(255 255 255 / 0.4); }
     .strip :global(.tick.major)::after { content: attr(data-label); position: absolute; right: 1.3rem; top: -0.55rem; white-space: nowrap; font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-    .strip :global(.mark) { position: absolute; right: -0.15rem; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 10px var(--glow); }
+    .strip :global(.mark) { position: absolute; right: -0.15rem; width: 8px; height: 8px; margin-top: -4px; }
+    .strip :global(.mark)::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--glow); box-shadow: 0 0 10px var(--glow); }
+    .strip :global(.mark-label) { position: absolute; right: 1.3rem; top: -0.4rem; white-space: nowrap; font-size: 0.75rem; line-height: 1.2; color: var(--text); }
+    .strip :global(.mark-m) { color: var(--muted); font-variant-numeric: tabular-nums; }
     .now { position: absolute; top: 50%; right: 0; width: 1.6rem; height: 2px; background: var(--glow); box-shadow: 0 0 8px var(--glow); }
   }
   @media (max-width: 899px) { .hud dl { grid-template-columns: repeat(2, auto); } }
-  @media (prefers-reduced-motion: reduce) { :global(body) { transition: none; } .strip { transition: none; } :global(.js) .mark.pop { animation: none; } .link-btn { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .seg span { transition: none; } :global(body) { transition: none; } .strip { transition: none; } :global(.js) .mark.pop { animation: none; } .link-btn { transition: none; } }
 </style>
