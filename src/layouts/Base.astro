@@ -36,6 +36,9 @@ const ogImage = new URL('/og.png', Astro.site ?? Astro.url).toString();
   <body>
     <a href="#main" class="skip">Skip to content</a>
     <slot />
+    <script>
+      import '../scripts/smooth';
+    </script>
   </body>
 </html>
 

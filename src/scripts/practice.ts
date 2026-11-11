@@ -8,6 +8,7 @@ import { mountSound } from './sound';
 import { questions, hard, scams, type Scam } from '../data/questions';
 import { landmarks } from '../data/landmarks';
 import { markNode } from './ruler';
+import { lenis } from './smooth';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const root = document.documentElement;
@@ -142,7 +143,8 @@ $<HTMLButtonElement>('[data-restart]')?.addEventListener('click', () => {
   const prev = depth;
   depth = 0; streak = 0; rightThisDive = 0;
   paint(prev);
-  window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+  if (lenis) lenis.scrollTo(0);
+  else window.scrollTo({ top: 0, behavior: 'auto' });
 });
 
 paint(0);

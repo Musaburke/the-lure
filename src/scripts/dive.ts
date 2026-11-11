@@ -11,6 +11,7 @@ import { pressureAtm, tempC, lightPct, formatLight } from './ocean';
 import { byScam, type Scam } from '../data/questions';
 import { landmarks } from '../data/landmarks';
 import { markNode } from './ruler';
+import { lenis } from './smooth';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const root = document.documentElement;
@@ -98,9 +99,10 @@ const mix = (a: number[], b: number[], t: number) => a.map((v, i) => Math.round(
 const PAD = 32, FIT_MIN = 0.3;
 let lastDepth = -1, lastMark = '', lastGround = '';
 const band = $<HTMLElement>('.band');
-// The crossing glides after the scroll rather than being tied to it: `eased` chases the scroll's
-// target with a time constant, so wheel steps and fast flicks become one smooth swoop.
-const GLIDE = 0.32; // seconds
+// Without smooth page scrolling, the crossing glides after the scroll: `eased` chases the scroll's
+// target with a time constant, so wheel steps become one swoop.
+const GLIDE = 0.32; // seconds, only when the page itself scrolls natively (reduced motion is instant)
+const smoothPage = !!lenis; // with smooth page scrolling the lens rides the page, like the text
 let eased = -1, lastT = 0, lensK = -1, gliding = false;
 
 function update() {
@@ -140,7 +142,7 @@ function update() {
   const now = performance.now();
   const dt = Math.min(0.1, (now - lastT) / 1000);
   lastT = now;
-  if (eased < 0) eased = target;
+  if (eased < 0 || smoothPage) eased = target;
   else eased += (target - eased) * (1 - Math.exp(-dt / GLIDE));
   const move = Math.abs(target - eased) < 0.0005 ? target : eased;
   gliding = move !== target || atK !== lensK;
