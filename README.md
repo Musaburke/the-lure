@@ -2,6 +2,10 @@
 
 A scroll-down dive through the ocean's real depth zones. At each depth you meet a deep-sea animal that survives by tricking others, the online scam that uses the same trick, how one of those scams plays out step by step, the real UK numbers, and a "spot the fake" challenge. A separate **practice dive** turns it into a game: every fake you spot takes you 100 metres deeper, past real landmarks, all the way to the Challenger Deep. It's written for everyday adults: the people most likely to get a scam text and least likely to read a security guide.
 
+**Live:** https://the-lure.pages.dev
+
+![The Lure's opening screen: "Dive 4,000 metres. Meet the animals that trick their prey, and the scams that copy them." beside reef sharks seen through a glass lens, with a depth gauge reading 0 m at the surface](docs/home.jpg)
+
 | Depth | Animal | The trick | The scam |
 | --- | --- | --- | --- |
 | 0–75 m | Mimic octopus | Disguises itself as more dangerous animals | Impersonation |
@@ -10,6 +14,8 @@ A scroll-down dive through the ocean's real depth zones. At each depth you meet 
 | 600–1,000 m | Beluga whale | NOC, the Navy beluga that copied human speech | Borrowed voices: spoofed calls, cloned voices |
 | 1,000–4,000 m | Deep-sea anglerfish | A glowing lure in total darkness | Bait: refunds, prizes, investment scams |
 | 4,000 m+ | The bottom | | A checklist, what to do if you've been scammed, a link checker |
+
+![A spot-the-fake challenge at 71 metres: three text messages that appear to come from a made-up Northway Bank, one of them a scam, under the question "Which one?" and a counter reading 1 of 10](docs/challenge.jpg)
 
 ## What's interesting in the code
 
