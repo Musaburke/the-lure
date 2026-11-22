@@ -279,7 +279,7 @@ export const zones: Zone[] = [
     },
     numbers: [
       { figure: '£221.5m', text: 'lost to investment scams in 2025, the biggest share of all bank-transfer scam losses.', source: 'ukf2026' },
-      { figure: 'Up 40%', text: 'on the year before, from 14,893 cases.', source: 'ukf2026' },
+      { figure: 'Up 40%', text: 'on the year before. Cases rose 26% to 14,893.', source: 'ukf2026' },
     ],
     challenge: 'Find the bait',
     photo: {
