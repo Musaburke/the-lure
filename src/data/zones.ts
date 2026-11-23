@@ -229,7 +229,7 @@ export const zones: Zone[] = [
     },
     numbers: [
       { figure: '17%', text: 'of bank-transfer scam cases in 2025 started with a call or text, yet they made up 28% of all the money lost.', source: 'ukf2026' },
-      { figure: '28%', text: 'of UK adults in a 2024 survey of 3,000 people believed they had been targeted by an AI voice-cloning scam in the past year.', source: 'starling2024' },
+      { figure: '28%', text: 'of UK adults in a 2024 survey of 3,010 people believed they had been targeted by an AI voice-cloning scam in the past year.', source: 'starling2024' },
     ],
     challenge: 'Find the borrowed voice',
     photo: {
