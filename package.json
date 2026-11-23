@@ -11,7 +11,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check && astro build",
-    "test": "node --test --experimental-strip-types tests/",
+    "test": "node --test --experimental-strip-types tests/*.test.ts",
     "deploy": "npm run build && wrangler pages deploy dist --project-name the-lure --branch main"
   },
   "dependencies": {
