@@ -5,7 +5,7 @@ const {chromium}=require('playwright-core');
 (async()=>{const b=await chromium.launch({channel:'chrome'});
 for (const [w,h] of [[1440,900],[1280,720],[1024,768]]) {
 const p=await b.newPage({viewport:{width:w,height:h}});
-await p.goto('http://localhost:4400/',{waitUntil:'networkidle'});
+await p.goto('http://localhost:'+(process.env.PORT||4400)+'/',{waitUntil:'networkidle'});
 const H=await p.evaluate(()=>document.documentElement.scrollHeight);
 let worst=[], frames=0;
 for (let y=0;y<H;y+=240){ await p.evaluate(y=>window.scrollTo(0,y),y); await p.waitForTimeout(1100);

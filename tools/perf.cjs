@@ -6,7 +6,7 @@ for (const rate of [1,4]) {
 const p=await b.newPage({viewport:{width:1440,height:900}});
 const cdp=await p.context().newCDPSession(p); await cdp.send('Emulation.setCPUThrottlingRate',{rate});
 await p.addInitScript(()=>{window.__lt=[];new PerformanceObserver(l=>{for(const e of l.getEntries())window.__lt.push(Math.round(e.duration))}).observe({type:'longtask',buffered:true}); window.__frames=[]; let last=performance.now(); const f=(t)=>{window.__frames.push(t-last); last=t; requestAnimationFrame(f)}; requestAnimationFrame(f);});
-await p.goto('http://localhost:4402/',{waitUntil:'networkidle'}); await p.waitForTimeout(2500);
+await p.goto('http://localhost:'+(process.env.PORT||4402)+'/',{waitUntil:'networkidle'}); await p.waitForTimeout(2500);
 await p.evaluate(()=>{window.__lt=[];window.__frames=[];});
 await p.mouse.move(700,450);
 for(let k=0;k<120;k++){ await p.mouse.wheel(0,180); await p.waitForTimeout(40); }
