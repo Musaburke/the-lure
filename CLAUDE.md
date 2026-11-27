@@ -25,7 +25,7 @@ Astro 7, TypeScript (strict), plain CSS tokens in `src/styles/global.css`. Three
 - Animate transform and opacity only. Every control has hover, focus-visible and active states.
 
 ## Skills
-`design-taste-frontend` before UI, `emil-design-eng` for motion, `copywriting` for words, `vibesec-skill` for the link checker and CSP, `find-docs` for Astro/Three.js questions, then `impeccable` and `web-design-guidelines` after each section.
+`design-memory` before UI, `emil-design-eng` for motion, `copywriting` for words, `vibesec-skill` for the link checker and CSP, `find-docs` for Astro/Three.js questions, then `impeccable` and `web-design-guidelines` after each section.
 
 ## Look at what you made
 After any visual change, screenshot at 1440 and 390 and judge the pictures, two rounds minimum. `npm run build` must pass before calling work done.
